@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Tab Switch Test</title>
+    <style>
+        .hidden { display: none !important; }
+        main > section { display: block; }
+        .tab { cursor: pointer; padding: 10px; margin: 5px; border: 1px solid #ccc; }
+        .tab.active { background: #007bff; color: white; }
+        section { padding: 20px; border: 1px solid #ddd; margin: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="tabs">
+            <div class="tab active" data-view="dashboard">Dashboard</div>
+            <div class="tab" data-view="transactions">Transactions</div>
+            <div class="tab" data-view="budgets">Budgets</div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="dashboard">
+            <h2>Dashboard</h2>
+            <p>This is the dashboard section.</p>
+        </section>
+        
+        <section id="transactions">
+            <h2>Transactions</h2>
+            <p>This is the transactions section.</p>
+        </section>
+        
+        <section id="budgets">
+            <h2>Budgets</h2>
+            <p>This is the budgets section.</p>
+        </section>
+    </main>
+
+    <script>
+        console.log('🧪 Testing tab switching...');
+        
+        function openTab(id) {
+            console.log('🚀 openTab called with id:', id);
+            
+            // Update tab states
+            const allTabs = document.querySelectorAll('.tab');
+            allTabs.forEach(t => {
+                const isActive = t.dataset.view === id;
+                t.classList.toggle('active', isActive);
+                console.log(`Tab ${t.dataset.view}: ${isActive ? 'active' : 'inactive'}`);
+            });
+            
+            // Hide all sections first, then show only the target
+            const allSections = document.querySelectorAll('main > section');
+            allSections.forEach(s => {
+                s.classList.add('hidden');
+                console.log(`Section ${s.id}: hidden`);
+            });
+            
+            // Show only the target section
+            const targetSection = document.getElementById(id);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+                console.log(`Section ${id}: visible`);
+            }
+        }
+        
+        // Add event listeners
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tabId = tab.dataset.view;
+                console.log('📱 Tab clicked:', tabId);
+                openTab(tabId);
+            });
+        });
+        
+        console.log('✅ Test setup complete');
+    </script>
+</body>
+</html>

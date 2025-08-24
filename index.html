@@ -1,0 +1,950 @@
+﻿<!DOCTYPE html>
+<html lang="en"> <!-- Language fixed -->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Yen Budget Manager</title>
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js" defer></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <header>
+        <div class="header-container">
+            <div class="brand">
+                <div class="logo">¥</div>
+                <div>Yen Budget Manager</div>
+                <span class="tag" id="monthTag"></span>
+            </div>
+            <nav class="tabs" id="tabs" aria-label="Main navigation">
+                <div class="tab active" data-view="dashboard" role="button" tabindex="0">Dashboard</div>
+                <div class="tab" data-view="transactions" role="button" tabindex="0">Transactions</div>
+                <div class="tab" data-view="budgets" role="button" tabindex="0">Budgets</div>
+                <div class="tab" data-view="reports" role="button" tabindex="0">Reports</div>
+                <div class="tab" data-view="settings" role="button" tabindex="0">Settings</div>
+            </nav>
+            <div class="toolbar">
+                <button class="btn" id="toggleTheme" title="Toggle Light / Dark (L)">🌓</button>
+                <button class="btn" id="addQuick" title="Quick add (A)">➕ Add</button>
+                <button class="btn" id="exportBtn" title="Open Export">⬇️ Export</button>
+                <label class="btn">
+                    ⬆️ Import
+                    <input type="file" id="importFile" accept=".json,.csv" hidden />
+                </label>
+
+            </div>
+        </div>
+    </header>
+
+    <main id="app">
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="grid">
+                    <!-- Summary Statistics Row -->
+        <div class="card summary-stats" style="grid-column: span 12;">
+            <div class="section-header">
+                <span class="icon">📊</span>
+                <h3>Financial Overview</h3>
+            </div>
+            <div class="kpis" id="kpis">
+                <!-- KPI cards will be populated by JavaScript -->
+            </div>
+        </div>
+
+            <!-- Quick Actions Section -->
+            <div class="card quick-actions" style="grid-column: span 4;">
+                <div class="section-header">
+                    <span class="icon">🚀</span>
+                    <h3>Quick Actions</h3>
+                </div>
+                <div class="action-buttons">
+                    <button class="action-btn income-btn" id="addIncomeBtn">
+                        <span class="btn-icon">💰</span>
+                        Add Income
+                    </button>
+                    <button class="action-btn expense-btn" id="addExpenseBtn">
+                        <span class="btn-icon">💸</span>
+                        Add Expense
+                    </button>
+                    <button class="action-btn budget-btn" id="setBudgetBtn">
+                        <span class="btn-icon">📊</span>
+                        Set Budget
+                    </button>
+                    <button class="action-btn reports-btn" id="viewReportsBtn">
+                        <span class="btn-icon">📈</span>
+                        View Reports
+                    </button>
+                </div>
+            </div>
+
+        <!-- Recent Transactions Section -->
+            <div class="card recent-transactions" style="grid-column: span 5;">
+                <div class="section-header">
+                    <span class="icon">📄</span>
+                    <h3>Recent Transactions</h3>
+                    <button class="view-all-btn" id="viewAllBtn">View All</button>
+                </div>
+                <div class="table-scroll">
+                    <table class="list" id="recentTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Category</th>
+                                <th>Note</th>
+                                <th class="right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="transaction-count" id="transactionCount"></div>
+            </div>
+
+            <!-- Savings Overview Section -->
+            <div class="card savings-overview" style="grid-column: span 3;">
+                <div class="section-header">
+                    <span class="icon">💎</span>
+                    <h3>Savings Overview</h3>
+                </div>
+                <div class="savings-stats">
+                    <div class="savings-item">
+                        <span class="label">TOTAL SAVED</span>
+                        <span class="value" id="totalSaved">¥0</span>
+                    </div>
+                    <div class="savings-item">
+                        <span class="label">SAVINGS RATE</span>
+                        <span class="value" id="savingsRate">100%</span>
+                    </div>
+                </div>
+                <div class="savings-category">
+                    <h4>By Category</h4>
+                    <div class="monthly-goal">
+                        <span class="icon">🎯</span>
+                        <span class="goal-text">Monthly Goal</span>
+                        <span class="goal-amount" id="monthlyGoal">¥0 / ¥0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- This Month Progress Section -->
+            <div class="card month-progress" style="grid-column: span 4;">
+                <div class="section-header">
+                    <span class="icon">📅</span>
+                    <h3>This Month</h3>
+                </div>
+                <div class="progress-stats">
+                    <div class="progress-item">
+                        <span class="label">Days completed</span>
+                        <span class="value" id="daysCompleted">0</span>
+                    </div>
+                    <div class="progress-item">
+                        <span class="label">Days remaining</span>
+                        <span class="value" id="daysRemaining">0</span>
+                    </div>
+                    <div class="progress-item">
+                        <span class="label">Progress</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="monthProgress"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Trend Chart Section -->
+            <div class="card trend-chart" style="grid-column: span 5;">
+                <div class="section-header">
+                    <span class="icon">📊</span>
+                    <h3>Monthly Trend</h3>
+                    <select class="trend-selector" id="trendSelector">
+                        <option value="12">Last 12 months</option>
+                        <option value="6">Last 6 months</option>
+                        <option value="3">Last 3 months</option>
+                    </select>
+                </div>
+                <canvas id="trendChart" height="200"></canvas>
+            </div>
+
+            <!-- Budget Status Section -->
+            <div class="card budget-status" style="grid-column: span 3;">
+                <div class="section-header">
+                    <span class="icon">🏦</span>
+                    <h3>Budget Status</h3>
+                </div>
+                <div id="budgetStatusContent" class="budget-status-content">
+                    <div class="empty-state">
+                        <span class="empty-icon">📊</span>
+                        <p>No budget set</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Insights Section -->
+            <div class="card financial-insights" style="grid-column: span 4;">
+                <div class="section-header">
+                    <span class="icon">💡</span>
+                    <h3>Financial Insights</h3>
+                </div>
+                <div class="insight-content" id="insightContent">
+                    <div class="insight-item">
+                        <span class="insight-icon">✅</span>
+                        <span class="insight-text">Excellent Savings Rate</span>
+                    </div>
+                    <div class="insight-details">
+                        Great job! Your <span id="insightRate">100.0%</span> savings rate is excellent. Consider investing excess funds.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Recurring Section -->
+            <div class="card upcoming-recurring" style="grid-column: span 4;">
+                <div class="section-header">
+                    <span class="icon">🔔</span>
+                    <h3>Upcoming Recurring</h3>
+                </div>
+                <div id="upcomingRecurring" class="upcoming-content">
+                    <div class="empty-state">
+                        <span class="empty-icon">📅</span>
+                        <p>No upcoming recurring transactions</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TRANSACTIONS -->
+        <section id="transactions" class="grid hidden" aria-hidden="true">
+            <div class="card" style="grid-column: span 4;">
+                <h2>New Transaction</h2>
+                <form id="txForm" class="stack">
+                    <div class="row">
+                        <div>
+                            <label>Type</label>
+                            <select name="type" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Category</label>
+                            <!-- Fixed: placeholder in English -->
+                            <input name="category" id="category" list="catList" placeholder="e.g., Food, Rent" autocomplete="off">
+                            <datalist id="catList"></datalist>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div>
+                            <label>Amount (¥)</label>
+                            <input name="amount" type="number" step="1" min="0" required />
+                        </div>
+                        <div>
+                            <label>Date</label>
+                            <input name="date" type="date" required />
+                        </div>
+                    </div>
+                    <div>
+                        <label>Note</label>
+                        <!-- Fixed: English -->
+                        <input name="note" placeholder="Note (optional)" />
+                    </div>
+                    <div class="row">
+                        <div>
+                            <label>Recurring</label>
+                            <select name="recurring">
+                                <option value="none">None</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Next Occurrence</label>
+                            <input name="next" type="date" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <button class="btn primary" type="submit">Save Transaction</button>
+                        <button class="btn" type="reset">Reset</button>
+                    </div>
+                </form>
+                <div class="tips" style="margin-top:12px;">
+                    <b>Tips</b><br>
+                    Ctrl+T — Quick add transaction<br>
+                    Ctrl+L — Toggle light/dark<br>
+                    Ctrl+/ — Focus category filter<br>
+                    Recurring items auto-post on app load if due.
+                </div>
+            </div>
+            <div class="card" style="grid-column: span 8;">
+                <div class="row" style="align-items:flex-end">
+                    <h2 style="margin:0">All Transactions</h2>
+                    <div class="right"></div>
+                    <div>
+                        <label>Filter by Category</label>
+                        <input id="filterCat" list="catList" placeholder="(all)" />
+                    </div>
+                    <div>
+                        <label>Month</label>
+                        <input id="filterMonth" type="month" />
+                    </div>
+                    <button class="btn" id="clearFilters">Clear</button>
+                </div>
+                <div class="table-scroll">
+                    <table class="list" id="txTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Category</th>
+                                <th>Note</th>
+                                <th class="right">Amount</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- BUDGETS -->
+        <section id="budgets" class="grid hidden">
+            <div class="card" style="grid-column: span 4;">
+                <h2>Category Budget</h2>
+                <form id="budgetForm" class="stack">
+                    <div>
+                        <label>Category</label>
+                        <input name="category" list="catList" placeholder="e.g., Food" required />
+                    </div>
+                    <div>
+                        <label>Monthly Budget (¥)</label>
+                        <input name="amount" type="number" step="1" min="0" required />
+                    </div>
+                    <div>
+                        <label>Actual Spent This Month (¥)</label>
+                        <input name="actualSpent" type="number" step="1" min="0" placeholder="Enter amount spent" />
+                        <small style="color: var(--text-muted);">Leave empty if no spending recorded yet</small>
+                    </div>
+                    <div class="row">
+                        <button class="btn primary" type="submit">Save Budget</button>
+                        <button class="btn danger" type="button" id="deleteBudget">Delete</button>
+                    </div>
+                </form>
+                
+                <h3>Saving Goal</h3>
+                <form id="goalForm" class="stack">
+                    <div class="row">
+                        <div>
+                            <label>Monthly Income (¥)</label>
+                            <input name="income" type="number" step="1" min="0" />
+                        </div>
+                        <div>
+                            <label>Target Save %</label>
+                            <input name="rate" type="number" step="1" min="0" max="100" placeholder="20" />
+                        </div>
+                    </div>
+                    <button class="btn" type="submit">Save Goal</button>
+                    <div class="muted" id="goalNote"></div>
+                </form>
+                
+                <h3>Add Income</h3>
+                <form id="incomeForm" class="stack">
+                    <div>
+                        <label>Category</label>
+                        <input name="incomeCategory" list="catList" placeholder="e.g., Salary, Bonus" required />
+                    </div>
+                    <div>
+                        <label>Amount (¥)</label>
+                        <input name="incomeAmount" type="number" step="1" min="0" required />
+                    </div>
+                    <div>
+                        <label>Date</label>
+                        <input name="incomeDate" type="date" required />
+                    </div>
+                    <div>
+                        <label>Note (optional)</label>
+                        <input name="incomeNote" placeholder="Note (optional)" />
+                    </div>
+                    <div class="row">
+                        <button class="btn" type="reset">Reset</button>
+                        <button class="btn primary" type="submit">Save Income</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card" style="grid-column: span 8;">
+                <h2>Budgets Overview</h2>
+                <div class="table-scroll">
+                    <table class="list" id="budgetTable">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Budget</th>
+                                <th>Spent</th>
+                                <th>Remaining</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="budgetTableBody">
+                            <!-- Budgets will be rendered here by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h3>Savings from Categories</h3>
+                <div class="savings-categories" id="savingsCategories">
+                    <!-- Category savings will be rendered here by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- REPORTS -->
+        <section id="reports" class="grid hidden">
+            <!-- Report Header -->
+            <div class="card report-header" style="grid-column: span 12;">
+                <div class="report-title">
+                    <h2>Yen Budget Manager 2026 August</h2>
+                    <div class="report-actions">
+                        <button type="button" id="exportToPDF" class="btn export-btn">
+                            <span>📄</span> Export PDF
+                        </button>
+                        <button type="button" id="exportToExcel" class="btn export-btn">
+                            <span>📊</span> Export Excel
+                        </button>
+                        <button type="button" id="exportToCSV" class="btn export-btn">
+                            <span>📋</span> Export CSV
+                        </button>
+                        <button type="button" id="shareReport" class="btn share-btn">
+                            <span>🔗</span> Share Report
+                        </button>
+                        <button type="button" id="printReport" class="btn print-btn">
+                            <span>🖨️</span> Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 1 -->
+            <div class="card chart-card" style="grid-column: span 6;">
+                <div class="chart-header">
+                    <h3>Category Breakdown</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="categoryBreakdownChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <div class="card chart-card" style="grid-column: span 6;">
+                <div class="chart-header">
+                    <h3>Monthly Savings</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="monthlySavingsChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Charts Row 2 -->
+            <div class="card chart-card" style="grid-column: span 6;">
+                <div class="chart-header">
+                    <h3>Income vs Expense Trend</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="incomeExpenseChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <div class="card chart-card" style="grid-column: span 6;">
+                <div class="chart-header">
+                    <h3>Category Spending Trends (12 Months)</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="categoryTrendsChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Analysis Cards Row 1 -->
+            <div class="card analysis-card" style="grid-column: span 6;">
+                <div class="card-header">
+                    <h3>Financial Analysis & Projections</h3>
+                    <p class="subtitle">Current Month Projections</p>
+                </div>
+                <div class="analysis-content">
+                    <div class="analysis-item">
+                        <span class="label">Projected month-end expense:</span>
+                        <span class="value negative" id="projectedExpense">¥14,825</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">Daily burn rate:</span>
+                        <span class="value" id="dailyBurnRate">¥478/day</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">Expected outcome:</span>
+                        <span class="value negative" id="expectedOutcome">Deficit</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">Target saving:</span>
+                        <span class="value" id="targetSaving">¥0</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">Current pace:</span>
+                        <span class="value negative" id="currentPace">-¥11,000</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">Days remaining:</span>
+                        <span class="value" id="daysRemaining">8</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card analysis-card" style="grid-column: span 6;">
+                <div class="card-header">
+                    <h3>Financial Health Metrics</h3>
+                </div>
+                <div class="analysis-content">
+                    <div class="analysis-item">
+                        <span class="label">Average Monthly Income:</span>
+                        <span class="value" id="avgMonthlyIncome">¥0</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">Average Monthly Expense:</span>
+                        <span class="value negative" id="avgMonthlyExpense">¥917</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">Average Monthly Savings:</span>
+                        <span class="value negative" id="avgMonthlySavings">-¥917</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">Savings Rate:</span>
+                        <span class="value" id="savingsRate">0.0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Cards Row 2 -->
+            <div class="card analysis-card" style="grid-column: span 6;">
+                <div class="card-header">
+                    <h3>Budget Performance Analysis</h3>
+                </div>
+                <div class="budget-performance">
+                    <div class="budget-row">
+                        <div class="budget-category">Transport</div>
+                        <div class="budget-amount">¥10,000</div>
+                        <div class="budget-actual">¥7,000</div>
+                        <div class="budget-remaining positive">¥3,000</div>
+                        <div class="budget-percentage positive">70.0%</div>
+                    </div>
+                    <div class="budget-row">
+                        <div class="budget-category">Food</div>
+                        <div class="budget-amount">¥10,000</div>
+                        <div class="budget-actual">¥4,000</div>
+                        <div class="budget-remaining positive">¥6,000</div>
+                        <div class="budget-percentage positive">40.0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card analysis-card" style="grid-column: span 6;">
+                <div class="card-header">
+                    <h3>Year-over-Year Comparison</h3>
+                </div>
+                <div class="analysis-content">
+                    <div class="analysis-item">
+                        <span class="label">2025 Total Income:</span>
+                        <span class="value" id="yoy2025Income">¥0</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">2024 Total Income:</span>
+                        <span class="value" id="yoy2024Income">¥0</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="label">YoY Growth:</span>
+                        <span class="value positive" id="yoyGrowth">+0.0%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+            <!-- Export Options -->
+            <div class="card export-card" style="grid-column: span 12;">
+                <div class="card-header">
+                    <h3>Export & Share</h3>
+                </div>
+                <div class="export-options">
+                    <div class="export-option">
+                        <h4>📊 PDF Report</h4>
+                        <p>Professional PDF with all charts and analysis</p>
+                        <button type="button" id="exportPdf" class="btn primary">Export PDF</button>
+                    </div>
+                    <div class="export-option">
+                        <h4>📈 Excel Report</h4>
+                        <p>Detailed Excel spreadsheet with raw data</p>
+                        <button type="button" id="exportExcelReport" class="btn primary">Export Excel</button>
+                    </div>
+                    <div class="export-option">
+                        <h4>📱 Share Report</h4>
+                        <p>Share insights with family or financial advisor</p>
+                        <button type="button" id="shareReport" class="btn primary">Share Report</button>
+                    </div>
+                    <div class="export-option">
+                        <h4>🔄 Schedule Reports</h4>
+                        <p>Get monthly reports automatically</p>
+                        <button type="button" id="scheduleReports" class="btn primary">Set Schedule</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="hidden">
+            <div class="section-header">
+                <span class="icon">⚙️</span>
+                <h2>Settings</h2>
+            </div>
+            
+            <div class="settings-grid">
+                <!-- Left Column: Export & Data Actions -->
+                <div class="settings-column">
+                    <!-- Export Options -->
+                    <div class="card">
+                        <div class="section-header">
+                            <span class="icon">📤</span>
+                            <h3>Export Options</h3>
+                        </div>
+                        <div class="setting-group">
+                            <button type="button" id="exportJson" class="btn export-btn">Export JSON</button>
+                            <button type="button" id="exportCsv" class="btn export-btn">Export CSV</button>
+                            <button type="button" id="exportExcel" class="btn export-btn">Export Excel Report</button>
+                        </div>
+                    </div>
+
+                    <!-- Import Options -->
+                    <div class="card">
+                        <div class="section-header">
+                            <span class="icon">📥</span>
+                            <h3>Import Options</h3>
+                        </div>
+                        <div class="setting-group">
+                            <button type="button" id="importData" class="btn import-btn">Import Data</button>
+                            <p class="import-note">Supports JSON and CSV formats.</p>
+                        </div>
+                    </div>
+
+                    <!-- Data Actions -->
+                    <div class="card">
+                        <div class="section-header">
+                            <span class="icon">🗄️</span>
+                            <h3>Data Actions</h3>
+                        </div>
+                        <div class="setting-group">
+                            <button type="button" id="createBackup" class="btn backup-btn">Create Backup</button>
+                            <button type="button" id="wipe" class="btn danger">Wipe All Data</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Column: Theme & Preferences -->
+                <div class="settings-column">
+                    <!-- Theme & Display -->
+                    <div class="card">
+                        <div class="section-header">
+                            <span class="icon">🎨</span>
+                            <h3>Theme & Display</h3>
+                        </div>
+                        <div class="setting-group">
+                            <div class="setting-item">
+                                <label>Theme Mode</label>
+                                <div class="theme-toggle">
+                                    <button type="button" id="lightTheme" class="theme-option" data-theme="light">
+                                        <span class="theme-icon">☀️</span>
+                                        <span>Light</span>
+                                    </button>
+                                    <button type="button" id="darkTheme" class="theme-option active" data-theme="dark">
+                                        <span class="theme-icon">🌙</span>
+                                        <span>Dark</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label>Auto Theme</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="autoTheme" checked>
+                                    <label for="autoTheme" class="toggle-label"></label>
+                                </div>
+                                <small style="color: var(--text-muted);">Follow system preference</small>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label>Currency Display</label>
+                                <div class="currency-display">
+                                    <span class="currency-icon">¥</span>
+                                    <span>Japanese Yen (JPY)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contrast & Accessibility -->
+                    <div class="card">
+                        <div class="section-header">
+                            <span class="icon">👁️</span>
+                            <h3>Contrast & Accessibility</h3>
+                        </div>
+                        <div class="setting-group">
+                            <div class="setting-item">
+                                <label>Text Contrast</label>
+                                <div class="contrast-slider">
+                                    <input type="range" id="textContrast" min="1" max="3" step="0.1" value="1.5">
+                                    <div class="contrast-value" id="textContrastValue">1.5x</div>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label>Element Contrast</label>
+                                <div class="contrast-slider">
+                                    <input type="range" id="elementContrast" min="1" max="3" step="0.1" value="1.2">
+                                    <div class="contrast-value" id="elementContrastValue">1.2x</div>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label>High Contrast Mode</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="highContrast">
+                                    <label for="highContrast" class="toggle-label"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Color Grading -->
+                    <div class="card">
+                        <div class="section-header">
+                            <span class="icon">🎭</span>
+                            <h3>Color Grading</h3>
+                        </div>
+                        <div class="setting-group">
+                            <div class="setting-item">
+                                <label>Color Presets</label>
+                                <div class="color-preset">
+                                    <button type="button" class="color-preset-btn" data-preset="default" style="--preset-color: #3b82f6;">
+                                        Default
+                                    </button>
+                                    <button type="button" class="color-preset-btn" data-preset="warm" style="--preset-color: #f59e0b;">
+                                        Warm
+                                    </button>
+                                    <button type="button" class="color-preset-btn" data-preset="cool" style="--preset-color: #06b6d4;">
+                                        Cool
+                                    </button>
+                                    <button type="button" class="color-preset-btn" data-preset="vibrant" style="--preset-color: #8b5cf6;">
+                                        Vibrant
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label>Saturation</label>
+                                <div class="contrast-slider">
+                                    <input type="range" id="saturation" min="0.5" max="2" step="0.1" value="1">
+                                    <div class="contrast-value" id="saturationValue">100%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label>Color Blindness Support</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="colorBlindSupport">
+                                    <label for="colorBlindSupport" class="toggle-label"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Preferences -->
+                    <div class="card">
+                        <div class="section-header">
+                            <span class="icon">📊</span>
+                            <h3>Dashboard Preferences</h3>
+                        </div>
+                        <div class="setting-group">
+                            <div class="setting-item">
+                                <label for="recentLimit">Recent Transactions Limit</label>
+                                <select id="recentLimit">
+                                    <option value="3">3 transactions</option>
+                                    <option value="5" selected>5 transactions</option>
+                                    <option value="10">10 transactions</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label for="chartAnimations">Chart Animations</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="chartAnimations" checked>
+                                    <label for="chartAnimations" class="toggle-label"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Quick Actions & About -->
+                <div class="settings-column">
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="section-header">
+                            <span class="icon">⚡</span>
+                            <h3>Quick Actions</h3>
+                        </div>
+                        <div class="setting-group">
+                            <div class="shortcut-item">
+                                <kbd>Ctrl + T</kbd>
+                                <span>Quick add transaction</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <kbd>Ctrl + L</kbd>
+                                <span>Toggle light/dark theme</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <kbd>Ctrl + /</kbd>
+                                <span>Focus category filter</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <kbd>Ctrl + E</kbd>
+                                <span>Export data</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <kbd>Ctrl + S</kbd>
+                                <span>Save current form</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- About Yen Budget Manager -->
+                    <div class="card">
+                        <div class="section-header">
+                            <span class="icon">ℹ️</span>
+                            <h3>About Yen Budget Manager</h3>
+                        </div>
+                        <div class="setting-group">
+                            <div class="version-info">
+                                <strong>Version:</strong> 2.0.0
+                            </div>
+                            <div class="features-list">
+                                <span class="feature-tag">Offline-first</span>
+                                <span class="feature-tag">Local-only</span>
+                                <span class="feature-tag">Chart.js Integration</span>
+                                <span class="feature-tag">Excel Export</span>
+                            </div>
+                            <p class="about-description">
+                                Built for clarity and speed. Your financial data stays private and local.
+                            </p>
+                            <div class="about-icons">
+                                <span class="about-icon" title="Privacy">🔒</span>
+                                <span class="about-icon" title="Local Storage">👤</span>
+                                <span class="about-icon" title="Customizable">✏️</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Management Section (Full Width) -->
+            <div class="category-management-section">
+                <div class="card full-width">
+                    <div class="section-header">
+                        <span class="icon">🏷️</span>
+                        <h3>Category Management</h3>
+                    </div>
+                    
+                    <div class="category-controls">
+                        <div class="category-input-group">
+                            <label for="newCategoryInput">Enter new category name</label>
+                            <div class="input-button-group">
+                                <input type="text" id="newCategoryInput" placeholder="Enter category name..." maxlength="30" />
+                                <button type="button" id="addCategoryBtn" class="btn primary">+ Add Category</button>
+                            </div>
+                        </div>
+                        <div class="category-summary">
+                            <span id="categoryCount">12 categories</span>
+                            <span class="category-usage">2 in use</span>
+                        </div>
+                    </div>
+
+                    <div class="category-grid" id="defaultCategories">
+                        <!-- Categories will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <h2>Data Management</h2>
+            <div class="setting-item">
+                <label>Backup & Restore</label>
+                <div class="row">
+                    <button class="btn" onclick="exportData()">📤 Export Data</button>
+                    <button class="btn" onclick="importData()">📥 Import Data</button>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <label>Data Tools</label>
+                <div class="row">
+                    <button class="btn" onclick="viewRawData()">👁️ View Raw Data</button>
+                    <button class="btn danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <label>Database Info</label>
+                <div class="info-box">
+                    <p><strong>Storage Type:</strong> Browser localStorage</p>
+                    <p><strong>Data Key:</strong> yenBudgetManager</p>
+                    <p><strong>Capacity:</strong> ~5-10 MB</p>
+                    <p><strong>Persistence:</strong> Until browser data cleared</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-logo">¥</div>
+                <span>Yen Budget Manager</span>
+            </div>
+            <div class="footer-links">
+                <span>© 2025 Yen Budget Manager</span>
+                <span class="separator">•</span>
+                <span>Local & Private</span>
+                <span class="separator">•</span>
+                <span>Built with ❤️</span>
+            </div>
+        </div>
+    </footer>
+
+    <template id="rowTx">
+        <tr>
+            <td data-k="date"></td>
+            <td data-k="type"></td>
+            <td data-k="category"></td>
+            <td data-k="note"></td>
+            <td data-k="amount" class="right"></td>
+            <td>
+                <button class="btn" data-act="edit">✏️</button>
+                <button class="btn danger" data-act="del">🗑️</button>
+            </td>
+        </tr>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script-simple.js" defer></script>
+</body>
+
+</html>
