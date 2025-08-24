@@ -596,6 +596,15 @@
                         </button>
                     </div>
                 </div>
+                <!-- Real-time Status Indicator -->
+                <div class="real-time-status" id="realTimeStatus">
+                    <div class="status-icon"></div>
+                    <span>Real-time data active</span>
+                </div>
+                <!-- Real-time Timestamp -->
+                <div class="real-time-timestamp" id="realTimeTimestamp">
+                    Last updated: <span id="lastUpdateTime">Just now</span>
+                </div>
             </div>
 
             <!-- Executive Summary Cards -->
@@ -916,6 +925,10 @@
                         <div class="setting-group">
                             <button type="button" id="createBackup" class="btn backup-btn">Create Backup</button>
                             <button type="button" id="wipe" class="btn danger">Wipe All Data</button>
+                            <button type="button" id="debugState" class="btn warning">Debug State</button>
+                            <button type="button" id="clearTransactions" class="btn warning">Clear Transactions</button>
+                            <button type="button" id="resetState" class="btn danger">Reset State</button>
+                            <button type="button" id="testTransaction" class="btn primary">Test Transaction</button>
                         </div>
                     </div>
                 </div>

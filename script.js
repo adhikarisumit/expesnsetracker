@@ -1,10 +1,19 @@
 ﻿/* script.js - Yen Budget Manager (English, Light/Dark, LocalStorage) */
 (() => {
     // Utilities
-    const fmt = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 });
+    const fmt = new Intl.NumberFormat;
+    
+    // Date utilities
+    function today() {
+        return new Date().toISOString().split('T')[0];
+    }
+    
+    function ym(date) {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+    
     const ymd = (d) => new Date(d).toISOString().slice(0, 10);
-    const ym = (d) => ymd(d).slice(0, 7);
-    const today = () => ymd(new Date());
     const monthName = (s) => {
         const d = new Date(s + '-01');
         return `${d.getFullYear()} ${d.toLocaleString('en-US', { month: 'long' })}`;
@@ -110,8 +119,67 @@
     // State management
     let state = JSON.parse(localStorage.getItem(KEY) || 'null') || { ...defaultState };
     
+    // State migration and initialization
+    function initializeState() {
+        console.log('🔧 Initializing state...');
+        
+        // Ensure categories array exists
+        if (!state.categories) {
+            state.categories = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Other'];
+            console.log('✅ Categories array initialized');
+        }
+        
+        // Initialize transactions array if it doesn't exist
+        if (!state.transactions) {
+            state.transactions = [];
+            console.log('✅ Transactions array initialized');
+        }
+        
+        // Migrate old monthly structure to new transactions array if needed
+        if (state.tx && Object.keys(state.tx).length > 0 && state.transactions.length === 0) {
+            console.log('🔄 Migrating old monthly structure to new transactions array...');
+            for (const month in state.tx) {
+                if (state.tx[month] && Array.isArray(state.tx[month])) {
+                    state.transactions.push(...state.tx[month]);
+                    console.log(`✅ Migrated ${state.tx[month].length} transactions from ${month}`);
+                }
+            }
+            console.log(`✅ Total transactions migrated: ${state.transactions.length}`);
+        }
+        
+        // Ensure monthly structure exists for backward compatibility
+        if (!state.tx) {
+            state.tx = {};
+        }
+        
+        // Rebuild monthly structure from transactions array
+        if (state.transactions && state.transactions.length > 0) {
+            console.log('🔄 Rebuilding monthly structure from transactions...');
+            state.tx = {};
+            state.transactions.forEach(tx => {
+                const month = ym(tx.date);
+                if (!state.tx[month]) {
+                    state.tx[month] = [];
+                }
+                state.tx[month].push(tx);
+            });
+            console.log('✅ Monthly structure rebuilt');
+        }
+        
+        console.log('✅ State initialization complete');
+        console.log('📊 Current state:', {
+            categories: state.categories.length,
+            transactions: state.transactions.length,
+            monthlyMonths: Object.keys(state.tx).length
+        });
+    }
+    
+    // Initialize state on load
+    initializeState();
+    
     function save() {
         localStorage.setItem(KEY, JSON.stringify(state));
+        console.log('💾 State saved to localStorage');
     }
 
     // Theme management
@@ -123,27 +191,162 @@
 
     // Core functions
     function addTx(tx) {
+        console.log('🚀 addTx called with:', tx);
+        console.log('📊 Current state before adding:', {
+            hasTransactions: !!state.transactions,
+            transactionsLength: state.transactions ? state.transactions.length : 0,
+            hasTx: !!state.tx,
+            hasCategories: !!state.categories,
+            categoriesLength: state.categories ? state.categories.length : 0
+        });
+        
+        // Validate transaction data
+        if (!tx || !tx.type || !tx.category || !tx.amount || !tx.date) {
+            console.error('❌ Invalid transaction data:', tx);
+            return false;
+        }
+        
+        // Ensure amount is positive
+        if (tx.amount <= 0) {
+            console.error('❌ Transaction amount must be positive:', tx.amount);
+            return false;
+        }
+        
+        // Initialize categories array if it doesn't exist
+        if (!state.categories) {
+            state.categories = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Other'];
+            console.log('✅ Categories array initialized');
+        }
+        
+        // Add to transactions array
+        if (!state.transactions) {
+            state.transactions = [];
+            console.log('✅ Transactions array initialized');
+        }
+        state.transactions.push(tx);
+        console.log('✅ Transaction added to transactions array');
+        
+        // Also maintain backward compatibility with monthly structure
         const month = ym(tx.date);
-        if (!state.tx[month]) state.tx[month] = [];
-        state.tx[month].push(tx);
+        console.log('📅 Month for transaction:', month);
+        
+        if (!state.tx) {
+            state.tx = {};
+            console.log('✅ Monthly tx structure initialized');
+        }
+        if (!state.tx[month]) {
+            state.tx[month] = [];
+            console.log('✅ Month array initialized for:', month);
+        }
+        
+        // Check if transaction already exists in monthly structure
+        const existingIndex = state.tx[month].findIndex(t => t.id === tx.id);
+        if (existingIndex >= 0) {
+            console.log('⚠️ Transaction already exists in monthly structure, updating...');
+            state.tx[month][existingIndex] = tx;
+        } else {
+            state.tx[month].push(tx);
+            console.log('✅ Transaction added to monthly structure');
+        }
+        
+        // Add category if it's new
+        if (tx.category && !state.categories.includes(tx.category)) {
+            state.categories.push(tx.category);
+            console.log('✅ New category added:', tx.category);
+        }
+        
+        // Save state
+        console.log('💾 Saving state...');
         save();
+        console.log('✅ State saved');
+        
+        // Dispatch custom event for real-time updates
+        console.log('📡 Dispatching transactionAdded event...');
+        document.dispatchEvent(new CustomEvent('transactionAdded', { detail: tx }));
+        console.log('✅ Event dispatched');
+        
+        // Update UI
+        console.log('🎨 Updating UI...');
+        renderAll();
+        console.log('✅ UI updated');
+        
+        console.log('✅ Transaction added successfully:', tx);
+        console.log('📊 Current categories:', state.categories);
+        console.log('📊 Current transactions count:', state.transactions.length);
+        console.log('📊 Current monthly transactions:', state.tx[month].length);
+        
+        return true;
     }
 
     function allTx() {
-        const allTransactions = Object.values(state.tx).flat();
-        console.log('📋 All transactions from state:', state.tx);
-        console.log('📊 Flattened transactions:', allTransactions);
-        return allTransactions;
+        console.log('📋 allTx called');
+        console.log('📊 Current state:', {
+            hasTransactions: !!state.transactions,
+            transactionsLength: state.transactions ? state.transactions.length : 0,
+            hasTx: !!state.tx,
+            txKeys: state.tx ? Object.keys(state.tx) : []
+        });
+        
+        // Use the new transactions array if available and has data
+        if (state.transactions && state.transactions.length > 0) {
+            console.log('✅ Using new transactions array, count:', state.transactions.length);
+            return state.transactions;
+        }
+        
+        // Fallback to old monthly structure
+        if (state.tx && Object.keys(state.tx).length > 0) {
+            const allTransactions = Object.values(state.tx).flat();
+            console.log('📋 Using old monthly structure, flattened transactions:', allTransactions.length);
+            return allTransactions;
+        }
+        
+        console.log('⚠️ No transactions found in either structure');
+        return [];
     }
 
     function totalsForMonth(yyyymm) {
-        const arr = state.tx[yyyymm] || [];
-        const income = arr.filter(x => x.type === 'income').reduce((a, b) => a + b.amount, 0);
-        const expense = arr.filter(x => x.type === 'expense').reduce((a, b) => a + b.amount, 0);
-        return { income, expense, savings: income - expense };
+        console.log('📊 totalsForMonth called for:', yyyymm);
+        
+        // Use new transactions array if available
+        if (state.transactions && state.transactions.length > 0) {
+            const monthTransactions = state.transactions.filter(tx => ym(new Date(tx.date)) === yyyymm);
+            console.log('📋 Found transactions for month:', monthTransactions.length);
+            
+            const income = monthTransactions.filter(x => x.type === 'income').reduce((a, b) => a + b.amount, 0);
+            const expense = monthTransactions.filter(x => x.type === 'expense').reduce((a, b) => a + b.amount, 0);
+            const savings = income - expense;
+            
+            console.log('💰 Month totals:', { income, expense, savings });
+            return { income, expense, savings };
+        }
+        
+        // Fallback to old structure
+        if (state.tx && state.tx[yyyymm]) {
+            const arr = state.tx[yyyymm];
+            const income = arr.filter(x => x.type === 'income').reduce((a, b) => a + b.amount, 0);
+            const expense = arr.filter(x => x.type === 'expense').reduce((a, b) => a + b.amount, 0);
+            const savings = income - expense;
+            
+            console.log('💰 Month totals (old structure):', { income, expense, savings });
+            return { income, expense, savings };
+        }
+        
+        console.log('⚠️ No transactions found for month:', yyyymm);
+        return { income: 0, expense: 0, savings: 0 };
     }
 
     function categorySpend(yyyymm) {
+        // Use new transactions array if available
+        if (state.transactions && state.transactions.length > 0) {
+            const monthTransactions = state.transactions.filter(tx => ym(new Date(tx.date)) === yyyymm);
+            const out = {};
+            for (const t of monthTransactions.filter(x => x.type === 'expense')) {
+                out[t.category] = (out[t.category] || 0) + t.amount;
+            }
+            return out;
+        }
+        
+        // Fallback to old structure
         const out = {};
         for (const t of (state.tx[yyyymm] || []).filter(x => x.type === 'expense')) {
             out[t.category] = (out[t.category] || 0) + t.amount;
@@ -751,16 +954,108 @@
         }
     }
 
+    function updateTx(id, updates) {
+        // Update in new transactions array
+        if (state.transactions) {
+            const tx = state.transactions.find(t => t.id === id);
+            if (tx) {
+                Object.assign(tx, updates);
+                
+                // Also update in old monthly structure
+                const month = ym(tx.date);
+                if (state.tx && state.tx[month]) {
+                    const oldTx = state.tx[month].find(t => t.id === id);
+                    if (oldTx) {
+                        Object.assign(oldTx, updates);
+                    }
+                }
+                
+                save();
+                
+                // Dispatch custom event for real-time updates
+                document.dispatchEvent(new CustomEvent('transactionUpdated', { detail: { id, updates } }));
+                
+                // Update UI
+                renderAll();
+                
+                console.log('✅ Transaction updated successfully:', { id, updates });
+                return;
+            }
+        }
+        
+        // Fallback to old structure
+        for (const month in state.tx) {
+            const idx = state.tx[month].findIndex(t => t.id === id);
+            if (idx >= 0) {
+                Object.assign(state.tx[month][idx], updates);
+                save();
+                
+                // Dispatch custom event for real-time updates
+                document.dispatchEvent(new CustomEvent('transactionUpdated', { detail: { id, updates } }));
+                
+                // Update UI
+                renderAll();
+                
+                console.log('✅ Transaction updated successfully (old structure):', { id, updates });
+                return;
+            }
+        }
+        
+        console.error('❌ Transaction not found for update:', id);
+    }
+
     function deleteTx(id) {
+        // Delete from new transactions array
+        if (state.transactions) {
+            const txIndex = state.transactions.findIndex(t => t.id === id);
+            if (txIndex >= 0) {
+                const deletedTx = state.transactions[txIndex];
+                state.transactions.splice(txIndex, 1);
+                
+                // Also delete from old monthly structure
+                const month = ym(deletedTx.date);
+                if (state.tx && state.tx[month]) {
+                    const oldTxIndex = state.tx[month].findIndex(t => t.id === id);
+                    if (oldTxIndex >= 0) {
+                        state.tx[month].splice(oldTxIndex, 1);
+                    }
+                }
+                
+                save();
+                
+                // Dispatch custom event for real-time updates
+                document.dispatchEvent(new CustomEvent('transactionDeleted', { detail: { id } }));
+                
+                // Update UI
+                renderAll();
+                
+                console.log('✅ Transaction deleted successfully:', id);
+                return;
+            }
+        }
+        
+        // Fallback to old structure
         for (const month in state.tx) {
             const idx = state.tx[month].findIndex(t => t.id === id);
             if (idx >= 0) {
                 state.tx[month].splice(idx, 1);
-                if (!state.tx[month].length) delete state.tx[month];
-                break;
+                if (!state.tx[month].length) {
+                    delete state.tx[month];
+                }
+                save();
+                
+                // Dispatch custom event for real-time updates
+                document.dispatchEvent(new CustomEvent('transactionDeleted', { detail: { id } }));
+                
+                // Update UI
+                renderAll();
+                
+                console.log('✅ Transaction deleted successfully (old structure):', id);
+                return;
             }
         }
-        save();
+        
+        console.error('❌ Transaction not found for deletion:', id);
     }
 
     // Budget rendering
@@ -1002,55 +1297,202 @@
     // Make deleteCategory globally accessible
     window.deleteCategory = deleteCategory;
 
-    // Enhanced Reports rendering
+    // Enhanced Reports rendering with Real-time Data
     function renderReports() {
-        console.log('📊 Rendering enhanced reports...');
+        console.log('📊 Rendering enhanced reports with real-time data...');
         
         // Initialize report period display
         updateReportPeriodDisplay();
         
-        // Initialize summary cards
-        updateSummaryCards();
+        // Initialize summary cards with real-time data
+        updateSummaryCardsRealTime();
         
-        // Initialize enhanced charts
-        initializeEnhancedCharts();
+        // Initialize enhanced charts with real-time data
+        initializeEnhancedChartsRealTime();
         
-        // Initialize budget performance
-        updateBudgetPerformanceEnhanced();
+        // Initialize budget performance with real-time data
+        updateBudgetPerformanceRealTime();
         
-        // Initialize year-over-year analysis
-        updateYearOverYearAnalysis();
+        // Initialize year-over-year analysis with real-time data
+        updateYearOverYearAnalysisRealTime();
         
-        // Initialize financial insights
-        updateFinancialInsights();
+        // Initialize financial insights with real-time data
+        updateFinancialInsightsRealTime();
         
-        // Setup report controls
+        // Setup report controls with real-time updates
         setupEnhancedReportControls();
         
-        console.log('✅ Enhanced reports rendered successfully');
+        // Start real-time data updates
+        startRealTimeDataUpdates();
+        
+        console.log('✅ Enhanced reports with real-time data rendered successfully');
     }
 
-    // Update report period display
-    function updateReportPeriodDisplay() {
-        const reportPeriodDisplay = byId('reportPeriodDisplay');
-        if (reportPeriodDisplay) {
-            const currentDate = new Date();
-            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                               'July', 'August', 'September', 'October', 'November', 'December'];
-            const month = monthNames[currentDate.getMonth()];
-            const year = currentDate.getFullYear();
-            reportPeriodDisplay.textContent = `${month} ${year}`;
+    // Start real-time data updates
+    function startRealTimeDataUpdates() {
+        console.log('🔄 Starting real-time data updates...');
+        
+        // Show real-time status
+        showRealTimeStatus();
+        
+        // Update data every 30 seconds
+        setInterval(() => {
+            console.log('🔄 Refreshing real-time data...');
+            refreshAllReportData();
+            updateLastUpdateTime();
+        }, 30000); // 30 seconds
+        
+        // Update data when transactions change
+        setupTransactionChangeListeners();
+        
+        // Update data when budgets change
+        setupBudgetChangeListeners();
+        
+        console.log('✅ Real-time data updates started');
+    }
+
+    // Show real-time status indicator
+    function showRealTimeStatus() {
+        const statusElement = byId('realTimeStatus');
+        if (statusElement) {
+            statusElement.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                statusElement.classList.remove('show');
+            }, 3000);
         }
     }
 
-    // Update summary cards with enhanced data
-    function updateSummaryCards() {
+    // Update last update timestamp
+    function updateLastUpdateTime() {
+        const lastUpdateElement = byId('lastUpdateTime');
+        if (lastUpdateElement) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            lastUpdateElement.textContent = timeString;
+        }
+    }
+
+    // Show real-time notification
+    function showRealTimeNotification(title, message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `real-time-notification ${type}`;
+        
+        const icon = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+        
+        notification.innerHTML = `
+            <div class="notification-header">
+                <span class="notification-icon">${icon}</span>
+                <span class="notification-title">${title}</span>
+            </div>
+            <div class="notification-message">${message}</div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Show notification
+        setTimeout(() => notification.classList.add('show'), 100);
+        
+        // Hide and remove notification
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+
+    // Refresh all report data in real-time
+    function refreshAllReportData() {
+        console.log('🔄 Refreshing all report data...');
+        
+        // Show refreshing notification
+        showRealTimeNotification('Data Refresh', 'Updating financial data in real-time...', 'info');
+        
+        // Update summary cards
+        updateSummaryCardsRealTime();
+        
+        // Update charts with fresh data
+        refreshAllCharts();
+        
+        // Update budget performance
+        updateBudgetPerformanceRealTime();
+        
+        // Update year-over-year analysis
+        updateYearOverYearAnalysisRealTime();
+        
+        // Update financial insights
+        updateFinancialInsightsRealTime();
+        
+        // Update period display
+        updateReportPeriodDisplay();
+        
+        // Show success notification
+        setTimeout(() => {
+            showRealTimeNotification('Data Updated', 'All financial data has been refreshed successfully!', 'success');
+        }, 1000);
+        
+        console.log('✅ All report data refreshed successfully');
+    }
+
+    // Setup transaction change listeners for real-time updates
+    function setupTransactionChangeListeners() {
+        // Listen for localStorage changes (when transactions are added/updated/deleted)
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'transactions' || e.key === 'budgets' || e.key === 'categories') {
+                console.log('🔄 Data change detected, refreshing reports...');
+                setTimeout(() => refreshAllReportData(), 100);
+            }
+        });
+        
+        // Listen for custom events when transactions are modified
+        document.addEventListener('transactionUpdated', function() {
+            console.log('🔄 Transaction updated, refreshing reports...');
+            setTimeout(() => refreshAllReportData(), 100);
+        });
+        
+        document.addEventListener('transactionAdded', function() {
+            console.log('🔄 Transaction added, refreshing reports...');
+            setTimeout(() => refreshAllReportData(), 100);
+        });
+        
+        document.addEventListener('transactionDeleted', function() {
+            console.log('🔄 Transaction deleted, refreshing reports...');
+            setTimeout(() => refreshAllReportData(), 100);
+        });
+    }
+
+    // Setup budget change listeners for real-time updates
+    function setupBudgetChangeListeners() {
+        document.addEventListener('budgetUpdated', function() {
+            console.log('🔄 Budget updated, refreshing reports...');
+            setTimeout(() => refreshAllReportData(), 100);
+        });
+        
+        document.addEventListener('budgetAdded', function() {
+            console.log('🔄 Budget added, refreshing reports...');
+            setTimeout(() => refreshAllReportData(), 100);
+        });
+        
+        document.addEventListener('budgetDeleted', function() {
+            console.log('🔄 Budget deleted, refreshing reports...');
+            setTimeout(() => refreshAllReportData(), 100);
+        });
+    }
+
+    // Update summary cards with real-time data
+    function updateSummaryCardsRealTime() {
+        console.log('🔄 Updating summary cards with real-time data...');
+        
         const currentMonth = ym(new Date());
         const totals = totalsForMonth(currentMonth);
         const previousMonth = getPreviousMonth(currentMonth);
         const previousTotals = totalsForMonth(previousMonth);
         
-        // Calculate changes
+        // Calculate real-time changes
         const incomeChange = previousTotals.income > 0 ? 
             ((totals.income - previousTotals.income) / previousTotals.income) * 100 : 0;
         const expenseChange = previousTotals.expense > 0 ? 
@@ -1059,31 +1501,38 @@
             (((totals.income - totals.expense) - (previousTotals.income - previousTotals.expense)) / 
              (previousTotals.income - previousTotals.expense)) * 100 : 0;
         
-        // Update summary values
-        updateSummaryCard('summaryIncome', totals.income, incomeChange);
-        updateSummaryCard('summaryExpense', totals.expense, expenseChange);
-        updateSummaryCard('summarySavings', totals.income - totals.expense, savingsChange);
+        // Update summary values with real-time data
+        updateSummaryCardRealTime('summaryIncome', totals.income, incomeChange);
+        updateSummaryCardRealTime('summaryExpense', totals.expense, expenseChange);
+        updateSummaryCardRealTime('summarySavings', totals.income - totals.expense, savingsChange);
         
-        // Calculate and update savings rate
+        // Calculate and update real-time savings rate
         const savingsRate = totals.income > 0 ? ((totals.income - totals.expense) / totals.income) * 100 : 0;
         const previousSavingsRate = previousTotals.income > 0 ? 
             ((previousTotals.income - previousTotals.expense) / previousTotals.income) * 100 : 0;
         const savingsRateChange = previousSavingsRate > 0 ? 
             ((savingsRate - previousSavingsRate) / previousSavingsRate) * 100 : 0;
         
-        updateSummaryCard('summarySavingsRate', `${savingsRate.toFixed(1)}%`, savingsRateChange);
+        updateSummaryCardRealTime('summarySavingsRate', `${savingsRate.toFixed(1)}%`, savingsRateChange);
+        
+        console.log('✅ Summary cards updated with real-time data');
     }
 
-    // Update individual summary card
-    function updateSummaryCard(id, value, change) {
+    // Update individual summary card with real-time data
+    function updateSummaryCardRealTime(id, value, change) {
         const valueElement = byId(id);
         const changeElement = byId(id + 'Change');
         
         if (valueElement) {
             if (typeof value === 'number') {
                 valueElement.textContent = `¥${fmt.format(value)}`;
+                // Add real-time update indicator
+                valueElement.classList.add('real-time-update');
+                setTimeout(() => valueElement.classList.remove('real-time-update'), 2000);
             } else {
                 valueElement.textContent = value;
+                valueElement.classList.add('real-time-update');
+                setTimeout(() => valueElement.classList.remove('real-time-update'), 2000);
             }
         }
         
@@ -1091,40 +1540,53 @@
             const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
             changeElement.textContent = changeText;
             changeElement.className = `summary-change ${change >= 0 ? 'positive' : 'negative'}`;
+            
+            // Add real-time update indicator
+            changeElement.classList.add('real-time-update');
+            setTimeout(() => changeElement.classList.remove('real-time-update'), 2000);
         }
     }
 
-    // Get previous month
-    function getPreviousMonth(currentMonth) {
-        const [year, month] = currentMonth.split('-').map(Number);
-        if (month === 1) {
-            return `${year - 1}-12`;
-        } else {
-            return `${year}-${String(month - 1).padStart(2, '0')}`;
-        }
-    }
-
-    // Initialize enhanced charts
-    function initializeEnhancedCharts() {
+    // Initialize enhanced charts with real-time data
+    function initializeEnhancedChartsRealTime() {
+        console.log('🔄 Initializing charts with real-time data...');
+        
         // Financial Overview Chart
-        initializeFinancialOverviewChart();
+        initializeFinancialOverviewChartRealTime();
         
         // Category Distribution Chart
-        initializeCategoryDistributionChart();
+        initializeCategoryDistributionChartRealTime();
         
         // Monthly Trends Chart
-        initializeMonthlyTrendsChart();
+        initializeMonthlyTrendsChartRealTime();
         
         // Budget Performance Chart
-        initializeBudgetPerformanceChart();
+        initializeBudgetPerformanceChartRealTime();
+        
+        console.log('✅ Charts initialized with real-time data');
     }
 
-    // Initialize Financial Overview Chart
-    function initializeFinancialOverviewChart() {
+    // Refresh all charts with real-time data
+    function refreshAllCharts() {
+        console.log('🔄 Refreshing all charts with real-time data...');
+        
+        // Destroy existing charts and recreate with fresh data
+        Chart.helpers.each(Chart.instances, function(instance) {
+            instance.destroy();
+        });
+        
+        // Reinitialize all charts
+        initializeEnhancedChartsRealTime();
+        
+        console.log('✅ All charts refreshed with real-time data');
+    }
+
+    // Initialize Financial Overview Chart with real-time data
+    function initializeFinancialOverviewChartRealTime() {
         const ctx = document.getElementById('financialOverviewChart');
         if (!ctx) return;
         
-        const data = getLast30DaysData();
+        const data = getLast30DaysDataRealTime();
         
         new Chart(ctx, {
             type: 'line',
@@ -1163,6 +1625,13 @@
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ¥${fmt.format(context.parsed.y)}`;
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -1170,6 +1639,11 @@
                         beginAtZero: true,
                         grid: {
                             color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '¥' + fmt.format(value);
+                            }
                         }
                     },
                     x: {
@@ -1177,17 +1651,61 @@
                             color: 'rgba(0, 0, 0, 0.1)'
                         }
                     }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
                 }
             }
         });
     }
 
-    // Initialize Category Distribution Chart
-    function initializeCategoryDistributionChart() {
+    // Get last 30 days data with real-time updates
+    function getLast30DaysDataRealTime() {
+        const data = { labels: [], income: [], expenses: [], savings: [] };
+        const today = new Date();
+        
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            
+            const dayData = getDayDataRealTime(date);
+            
+            data.labels.push(dateStr);
+            data.income.push(dayData.income);
+            data.expenses.push(dayData.expense);
+            data.savings.push(dayData.income - dayData.expense);
+        }
+        
+        return data;
+    }
+
+    // Get real-time data for a specific day
+    function getDayDataRealTime(date) {
+        const dateStr = date.toISOString().split('T')[0];
+        const transactions = allTx().filter(tx => tx.date === dateStr);
+        
+        let income = 0;
+        let expense = 0;
+        
+        transactions.forEach(tx => {
+            if (tx.type === 'income') {
+                income += tx.amount;
+            } else {
+                expense += tx.amount;
+            }
+        });
+        
+        return { income, expense };
+    }
+
+    // Initialize Category Distribution Chart with real-time data
+    function initializeCategoryDistributionChartRealTime() {
         const ctx = document.getElementById('categoryDistributionChart');
         if (!ctx) return;
         
-        const data = getCategoryDistributionData();
+        const data = getCategoryDistributionDataRealTime();
         
         new Chart(ctx, {
             type: 'doughnut',
@@ -1213,14 +1731,27 @@
                             padding: 20,
                             usePointStyle: true
                         }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${context.label}: ¥${fmt.format(context.parsed)} (${percentage}%)`;
+                            }
+                        }
                     }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
                 }
             }
         });
     }
 
-    // Get category distribution data
-    function getCategoryDistributionData() {
+    // Get category distribution data with real-time updates
+    function getCategoryDistributionDataRealTime() {
         const currentMonth = ym(new Date());
         const transactions = allTx().filter(tx => ym(new Date(tx.date)) === currentMonth && tx.type === 'expense');
         
@@ -1239,12 +1770,12 @@
         };
     }
 
-    // Initialize Monthly Trends Chart
-    function initializeMonthlyTrendsChart() {
+    // Initialize Monthly Trends Chart with real-time data
+    function initializeMonthlyTrendsChartRealTime() {
         const ctx = document.getElementById('monthlyTrendsChart');
         if (!ctx) return;
         
-        const data = getMonthlyTrendsData(12);
+        const data = getMonthlyTrendsDataRealTime(12);
         
         new Chart(ctx, {
             type: 'bar',
@@ -1271,6 +1802,13 @@
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ¥${fmt.format(context.parsed.y)}`;
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -1278,6 +1816,11 @@
                         beginAtZero: true,
                         grid: {
                             color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '¥' + fmt.format(value);
+                            }
                         }
                     },
                     x: {
@@ -1285,13 +1828,17 @@
                             display: false
                         }
                     }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
                 }
             }
         });
     }
 
-    // Get monthly trends data
-    function getMonthlyTrendsData(months) {
+    // Get monthly trends data with real-time updates
+    function getMonthlyTrendsDataRealTime(months) {
         const data = { labels: [], income: [], expenses: [] };
         const currentDate = new Date();
         
@@ -1308,12 +1855,12 @@
         return data;
     }
 
-    // Initialize Budget Performance Chart
-    function initializeBudgetPerformanceChart() {
+    // Initialize Budget Performance Chart with real-time data
+    function initializeBudgetPerformanceChartRealTime() {
         const ctx = document.getElementById('budgetPerformanceChart');
         if (!ctx) return;
         
-        const data = getBudgetPerformanceData();
+        const data = getBudgetPerformanceDataRealTime();
         
         new Chart(ctx, {
             type: 'bar',
@@ -1340,6 +1887,13 @@
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ¥${fmt.format(context.parsed.y)}`;
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -1347,6 +1901,11 @@
                         beginAtZero: true,
                         grid: {
                             color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '¥' + fmt.format(value);
+                            }
                         }
                     },
                     x: {
@@ -1354,28 +1913,71 @@
                             display: false
                         }
                     }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
                 }
             }
         });
     }
 
-    // Get budget performance data
-    function getBudgetPerformanceData() {
-        // This would integrate with your budget system
-        // For now, using sample data
-        return {
-            labels: ['Food', 'Transport', 'Entertainment', 'Utilities'],
-            budgets: [10000, 8000, 5000, 6000],
-            actuals: [8500, 7200, 4800, 5800]
+    // Get budget performance data with real-time updates
+    function getBudgetPerformanceDataRealTime() {
+        // Get real-time budget data from your budget system
+        const budgets = getBudgets();
+        const currentMonth = ym(new Date());
+        
+        const budgetData = {
+            labels: [],
+            budgets: [],
+            actuals: []
         };
+        
+        if (budgets && budgets.length > 0) {
+            budgets.forEach(budget => {
+                budgetData.labels.push(budget.category);
+                budgetData.budgets.push(budget.amount);
+                
+                // Calculate actual spending for this category
+                const transactions = allTx().filter(tx => 
+                    ym(new Date(tx.date)) === currentMonth && 
+                    tx.type === 'expense' && 
+                    tx.category === budget.category
+                );
+                
+                const actual = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+                budgetData.actuals.push(actual);
+            });
+        } else {
+            // Fallback to sample data if no budgets exist
+            budgetData.labels = ['Food', 'Transport', 'Entertainment', 'Utilities'];
+            budgetData.budgets = [10000, 8000, 5000, 6000];
+            budgetData.actuals = [8500, 7200, 4800, 5800];
+        }
+        
+        return budgetData;
     }
 
-    // Update enhanced budget performance
-    function updateBudgetPerformanceEnhanced() {
+    // Get budgets from storage (you may need to implement this based on your budget system)
+    function getBudgets() {
+        try {
+            const budgets = localStorage.getItem('budgets');
+            return budgets ? JSON.parse(budgets) : [];
+        } catch (error) {
+            console.error('Error getting budgets:', error);
+            return [];
+        }
+    }
+
+    // Update enhanced budget performance with real-time data
+    function updateBudgetPerformanceRealTime() {
+        console.log('🔄 Updating budget performance with real-time data...');
+        
         const container = byId('budgetPerformanceEnhanced');
         if (!container) return;
         
-        const budgetData = getBudgetPerformanceData();
+        const budgetData = getBudgetPerformanceDataRealTime();
         let html = '';
         
         budgetData.labels.forEach((category, index) => {
@@ -1388,7 +1990,7 @@
             const percentageClass = percentage <= 100 ? 'positive' : 'negative';
             
             html += `
-                <div class="budget-row-enhanced">
+                <div class="budget-row-enhanced real-time-update">
                     <div class="budget-category">${category}</div>
                     <div class="budget-amount">¥${fmt.format(budget)}</div>
                     <div class="budget-actual">¥${fmt.format(actual)}</div>
@@ -1399,59 +2001,115 @@
         });
         
         container.innerHTML = html;
+        
+        // Remove real-time update indicator after animation
+        setTimeout(() => {
+            const rows = container.querySelectorAll('.real-time-update');
+            rows.forEach(row => row.classList.remove('real-time-update'));
+        }, 2000);
+        
+        console.log('✅ Budget performance updated with real-time data');
     }
 
-    // Update year-over-year analysis
-    function updateYearOverYearAnalysis() {
+    // Update year-over-year analysis with real-time data
+    function updateYearOverYearAnalysisRealTime() {
+        console.log('🔄 Updating year-over-year analysis with real-time data...');
+        
         const currentYear = new Date().getFullYear();
         const previousYear = currentYear - 1;
         
-        // Calculate YoY changes (simplified for demo)
-        const yoyIncomeChange = 15.5; // Example: 15.5% growth
-        const yoyExpenseChange = -8.2; // Example: 8.2% decrease
-        const yoySavingsChange = 25.3; // Example: 25.3% growth
+        // Calculate real-time YoY changes
+        const yoyData = calculateYearOverYearRealTime(currentYear, previousYear);
         
         // Update YoY values
-        updateYoYValue('yoyIncomeGrowth', yoyIncomeChange);
-        updateYoYValue('yoyExpenseGrowth', yoyExpenseChange);
-        updateYoYValue('yoySavingsGrowth', yoySavingsChange);
+        updateYoYValueRealTime('yoyIncomeGrowth', yoyData.incomeChange);
+        updateYoYValueRealTime('yoyExpenseGrowth', yoyData.expenseChange);
+        updateYoYValueRealTime('yoySavingsGrowth', yoyData.savingsChange);
         
         // Update YoY bars
-        updateYoYBar('yoyIncomeBar', yoyIncomeChange);
-        updateYoYBar('yoyExpenseBar', yoyExpenseChange);
-        updateYoYBar('yoySavingsBar', yoySavingsChange);
+        updateYoYBarRealTime('yoyIncomeBar', yoyData.incomeChange);
+        updateYoYBarRealTime('yoyExpenseBar', yoyData.expenseChange);
+        updateYoYBarRealTime('yoySavingsBar', yoyData.savingsChange);
+        
+        console.log('✅ Year-over-year analysis updated with real-time data');
     }
 
-    // Update YoY value
-    function updateYoYValue(id, change) {
+    // Calculate year-over-year changes with real-time data
+    function calculateYearOverYearRealTime(currentYear, previousYear) {
+        const currentYearData = getYearData(currentYear);
+        const previousYearData = getYearData(previousYear);
+        
+        const incomeChange = previousYearData.income > 0 ? 
+            ((currentYearData.income - previousYearData.income) / previousYearData.income) * 100 : 0;
+        const expenseChange = previousYearData.expense > 0 ? 
+            ((currentYearData.expense - previousYearData.expense) / previousYearData.expense) * 100 : 0;
+        const savingsChange = previousYearData.savings > 0 ? 
+            ((currentYearData.savings - previousYearData.savings) / previousYearData.savings) * 100 : 0;
+        
+        return { incomeChange, expenseChange, savingsChange };
+    }
+
+    // Get year data
+    function getYearData(year) {
+        const transactions = allTx().filter(tx => {
+            const txYear = new Date(tx.date).getFullYear();
+            return txYear === year;
+        });
+        
+        let income = 0;
+        let expense = 0;
+        
+        transactions.forEach(tx => {
+            if (tx.type === 'income') {
+                income += tx.amount;
+            } else {
+                expense += tx.amount;
+            }
+        });
+        
+        return { income, expense, savings: income - expense };
+    }
+
+    // Update YoY value with real-time data
+    function updateYoYValueRealTime(id, change) {
         const element = byId(id);
         if (element) {
             const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
             element.textContent = changeText;
             element.className = `yoy-value ${change >= 0 ? 'positive' : 'negative'}`;
+            
+            // Add real-time update indicator
+            element.classList.add('real-time-update');
+            setTimeout(() => element.classList.remove('real-time-update'), 2000);
         }
     }
 
-    // Update YoY bar
-    function updateYoYBar(id, change) {
+    // Update YoY bar with real-time data
+    function updateYoYBarRealTime(id, change) {
         const element = byId(id);
         if (element) {
             const width = Math.min(Math.abs(change) * 2, 100); // Scale for visualization
             element.style.width = `${width}%`;
+            
+            // Add real-time update indicator
+            element.classList.add('real-time-update');
+            setTimeout(() => element.classList.remove('real-time-update'), 2000);
         }
     }
 
-    // Update financial insights
-    function updateFinancialInsights() {
+    // Update financial insights with real-time data
+    function updateFinancialInsightsRealTime() {
+        console.log('🔄 Updating financial insights with real-time data...');
+        
         const container = byId('financialInsights');
         if (!container) return;
         
-        const insights = generateEnhancedInsights();
+        const insights = generateEnhancedInsightsRealTime();
         let html = '';
         
         insights.forEach(insight => {
             html += `
-                <div class="insight-item ${insight.type}">
+                <div class="insight-item ${insight.type} real-time-update">
                     <div class="insight-icon">${insight.icon}</div>
                     <div class="insight-content">
                         <h4>${insight.title}</h4>
@@ -1462,117 +2120,120 @@
         });
         
         container.innerHTML = html;
+        
+        // Remove real-time update indicator after animation
+        setTimeout(() => {
+            const items = container.querySelectorAll('.real-time-update');
+            items.forEach(item => item.classList.remove('real-time-update'));
+        }, 2000);
+        
+        console.log('✅ Financial insights updated with real-time data');
     }
 
-    // Generate enhanced insights
-    function generateEnhancedInsights() {
+    // Generate enhanced insights with real-time data
+    function generateEnhancedInsightsRealTime() {
         const currentMonth = ym(new Date());
         const totals = totalsForMonth(currentMonth);
         const savingsRate = totals.income > 0 ? ((totals.income - totals.expense) / totals.income) * 100 : 0;
         
         const insights = [];
         
+        // Real-time savings rate insights
         if (savingsRate >= 20) {
             insights.push({
                 type: 'positive',
                 icon: '💡',
                 title: 'Excellent Savings Rate',
-                description: `Your savings rate of ${savingsRate.toFixed(1)}% is above the recommended 20%. Consider increasing investments for long-term growth.`
+                description: `Your current savings rate is ${savingsRate.toFixed(1)}% (above the recommended 20%). Consider increasing investments for long-term growth.`
             });
         } else if (savingsRate >= 10) {
             insights.push({
                 type: 'info',
                 icon: 'ℹ️',
                 title: 'Good Savings Rate',
-                description: `Your savings rate of ${savingsRate.toFixed(1)}% is good. Aim to reach 20% for better financial security.`
+                description: `Your current savings rate is ${savingsRate.toFixed(1)}%. Aim to reach 20% for better financial security.`
             });
-        } else {
+        } else if (savingsRate > 0) {
             insights.push({
                 type: 'warning',
                 icon: '⚠️',
                 title: 'Low Savings Rate',
-                description: `Your savings rate of ${savingsRate.toFixed(1)}% is below recommended levels. Consider reducing expenses or increasing income.`
+                description: `Your current savings rate is ${savingsRate.toFixed(1)}%. Consider reducing expenses or increasing income.`
             });
-        }
-        
-        // Add more insights based on data analysis
-        if (totals.expense > totals.income * 0.8) {
+        } else {
             insights.push({
                 type: 'warning',
-                icon: '💰',
-                title: 'High Expense Ratio',
-                description: 'Your expenses are consuming more than 80% of your income. Look for areas to reduce spending.'
+                icon: '🚨',
+                title: 'Negative Savings Rate',
+                description: `You're currently spending more than you earn. Immediate action is needed to balance your finances.`
             });
         }
         
-        if (totals.income > 0 && totals.expense === 0) {
-            insights.push({
-                type: 'positive',
-                icon: '🎯',
-                title: 'Perfect Month',
-                description: 'No expenses recorded this month. Great job on controlling your spending!'
-            });
+        // Real-time expense ratio insights
+        if (totals.income > 0) {
+            const expenseRatio = (totals.expense / totals.income) * 100;
+            if (expenseRatio > 80) {
+                insights.push({
+                    type: 'warning',
+                    icon: '💰',
+                    title: 'High Expense Ratio',
+                    description: `Your expenses are consuming ${expenseRatio.toFixed(1)}% of your income. Look for areas to reduce spending.`
+                });
+            } else if (expenseRatio < 50) {
+                insights.push({
+                    type: 'positive',
+                    icon: '🎯',
+                    title: 'Excellent Expense Control',
+                    description: `Your expenses are only ${expenseRatio.toFixed(1)}% of your income. Great job on controlling your spending!`
+                });
+            }
         }
         
-        return insights;
-    }
-
-    // Setup enhanced report controls
-    function setupEnhancedReportControls() {
-        // Period selector
-        const periodSelector = byId('reportPeriod');
-        if (periodSelector) {
-            periodSelector.addEventListener('change', function() {
-                console.log('📊 Report period changed to:', this.value);
-                updateReportPeriodDisplay();
-                // Regenerate report data based on selected period
-                updateSummaryCards();
-                initializeEnhancedCharts();
-            });
-        }
-        
-        // Generate report button
-        const generateBtn = byId('generateReport');
-        if (generateBtn) {
-            generateBtn.addEventListener('click', function() {
-                console.log('📊 Generating report...');
-                // Add loading state
-                this.innerHTML = '<span class="btn-icon">⏳</span> Generating...';
-                this.disabled = true;
-                
-                setTimeout(() => {
-                    updateSummaryCards();
-                    initializeEnhancedCharts();
-                    updateBudgetPerformanceEnhanced();
-                    updateYearOverYearAnalysis();
-                    updateFinancialInsights();
-                    
-                    // Reset button
-                    this.innerHTML = '<span class="btn-icon">📊</span> Generate Report';
-                    this.disabled = false;
-                    
-                    console.log('✅ Report generated successfully');
-                }, 1000);
-            });
-        }
-        
-        // Chart type selectors
-        const chartTypeSelectors = document.querySelectorAll('.chart-type-selector');
-        chartTypeSelectors.forEach(selector => {
-            selector.addEventListener('change', function() {
-                console.log('📊 Chart type changed to:', this.value);
-                // Regenerate chart with new type
-                const chartId = this.closest('.chart-card').querySelector('canvas').id;
-                regenerateChart(chartId, this.value);
-            });
+        // Real-time transaction insights
+        const recentTransactions = allTx().filter(tx => {
+            const txDate = new Date(tx.date);
+            const daysDiff = (new Date() - txDate) / (1000 * 60 * 60 * 24);
+            return daysDiff <= 7; // Last 7 days
         });
-    }
-
-    // Regenerate chart with new type
-    function regenerateChart(chartId, chartType) {
-        console.log(`📊 Regenerating chart ${chartId} with type ${chartType}`);
-        // This would destroy the existing chart and create a new one
-        // For now, just log the change
+        
+        if (recentTransactions.length === 0) {
+            insights.push({
+                type: 'info',
+                icon: '📊',
+                title: 'No Recent Activity',
+                description: 'No transactions recorded in the last 7 days. Consider tracking your daily expenses for better insights.'
+            });
+        } else if (recentTransactions.length > 20) {
+            insights.push({
+                type: 'warning',
+                icon: '📝',
+                title: 'High Transaction Volume',
+                description: `You've made ${recentTransactions.length} transactions in the last 7 days. Consider consolidating smaller purchases.`
+            });
+        }
+        
+        // Real-time category insights
+        const categoryTotals = {};
+        recentTransactions.forEach(tx => {
+            if (tx.type === 'expense') {
+                categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount;
+            }
+        });
+        
+        const topCategory = Object.entries(categoryTotals)
+            .sort(([,a], [,b]) => b - a)[0];
+        
+        if (topCategory) {
+            const [category, amount] = topCategory;
+            insights.push({
+                type: 'info',
+                icon: '📈',
+                title: 'Top Spending Category',
+                description: `${category} is your highest spending category this week (¥${fmt.format(amount)}). Review if this aligns with your priorities.`
+            });
+        }
+        
+        return insights.slice(0, 4); // Limit to 4 insights
     }
 
     // Form handling
@@ -1649,9 +2310,19 @@
         // Income form
         const incomeForm = byId('incomeForm');
         if (incomeForm) {
+            console.log('✅ Income form found and handler attached');
             incomeForm.addEventListener('submit', (e) => {
                 e.preventDefault();
+                console.log('📝 Income form submitted');
+                
                 const fd = new FormData(incomeForm);
+                console.log('📊 Form data:', {
+                    category: fd.get('incomeCategory'),
+                    amount: fd.get('incomeAmount'),
+                    date: fd.get('incomeDate'),
+                    note: fd.get('incomeNote')
+                });
+                
                 const tx = {
                     id: crypto.randomUUID(),
                     type: 'income',
@@ -1663,16 +2334,34 @@
                     next: null
                 };
                 
+                console.log('📋 Created transaction object:', tx);
+                
                 if (tx.category && tx.amount > 0) {
+                    console.log('✅ Valid transaction data, adding...');
+                    
                     if (!state.categories.includes(tx.category)) {
                         state.categories.push(tx.category);
+                        console.log('✅ New category added:', tx.category);
                     }
+                    
                     addTx(tx);
                     renderAll();
                     incomeForm.reset();
                     showNotification('Income added successfully!', 'success');
+                    
+                    console.log('✅ Income transaction completed successfully');
+                } else {
+                    console.error('❌ Invalid transaction data:', {
+                        category: tx.category,
+                        amount: tx.amount,
+                        hasCategory: !!tx.category,
+                        hasAmount: tx.amount > 0
+                    });
+                    showNotification('Please fill in all required fields correctly', 'error');
                 }
             });
+        } else {
+            console.error('❌ Income form not found');
         }
     }
 
@@ -2481,6 +3170,200 @@
             console.error('❌ Export and share functionality initialization failed');
         }
     }
+
+    // Update report period display
+    function updateReportPeriodDisplay() {
+        const reportPeriodDisplay = byId('reportPeriodDisplay');
+        if (reportPeriodDisplay) {
+            const currentDate = new Date();
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            const month = monthNames[currentDate.getMonth()];
+            const year = currentDate.getFullYear();
+            reportPeriodDisplay.textContent = `${month} ${year}`;
+        }
+    }
+
+    // Get previous month
+    function getPreviousMonth(currentMonth) {
+        const [year, month] = currentMonth.split('-').map(Number);
+        if (month === 1) {
+            return `${year - 1}-12`;
+        } else {
+            return `${year}-${String(month - 1).padStart(2, '0')}`;
+        }
+    }
+
+    // Setup enhanced report controls with real-time updates
+    function setupEnhancedReportControls() {
+        // Period selector
+        const periodSelector = byId('reportPeriod');
+        if (periodSelector) {
+            periodSelector.addEventListener('change', function() {
+                console.log('📊 Report period changed to:', this.value);
+                updateReportPeriodDisplay();
+                // Regenerate report data based on selected period
+                updateSummaryCardsRealTime();
+                initializeEnhancedChartsRealTime();
+            });
+        }
+        
+        // Generate report button
+        const generateBtn = byId('generateReport');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', function() {
+                console.log('📊 Generating report...');
+                // Add loading state
+                this.innerHTML = '<span class="btn-icon">⏳</span> Generating...';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    updateSummaryCardsRealTime();
+                    initializeEnhancedChartsRealTime();
+                    updateBudgetPerformanceRealTime();
+                    updateYearOverYearAnalysisRealTime();
+                    updateFinancialInsightsRealTime();
+                    
+                    // Reset button
+                    this.innerHTML = '<span class="btn-icon">📊</span> Generate Report';
+                    this.disabled = false;
+                    
+                    console.log('✅ Report generated successfully');
+                }, 1000);
+            });
+        }
+        
+        // Chart type selectors
+        const chartTypeSelectors = document.querySelectorAll('.chart-type-selector');
+        chartTypeSelectors.forEach(selector => {
+            selector.addEventListener('change', function() {
+                console.log('📊 Chart type changed to:', this.value);
+                // Regenerate chart with new type
+                const chartId = this.closest('.chart-card').querySelector('canvas').id;
+                regenerateChart(chartId, this.value);
+            });
+        });
+    }
+
+    // Regenerate chart with new type
+    function regenerateChart(chartId, chartType) {
+        console.log(`📊 Regenerating chart ${chartId} with type ${chartType}`);
+        // This would destroy the existing chart and create a new one
+        // For now, just log the change
+    }
+
+    // Add real-time update indicators to existing transaction functions
+    function addTx(tx) {
+        state.transactions.push(tx);
+        saveState();
+        
+        // Dispatch custom event for real-time updates
+        document.dispatchEvent(new CustomEvent('transactionAdded', { detail: tx }));
+        
+        renderTransactions();
+        drawDashboard();
+    }
+
+    // State management functions
+    function resetState() {
+        console.log('🔄 Resetting state to default...');
+        state = { ...defaultState };
+        localStorage.removeItem(KEY);
+        save();
+        console.log('✅ State reset complete');
+        return state;
+    }
+    
+    function clearTransactions() {
+        console.log('🗑️ Clearing all transactions...');
+        state.transactions = [];
+        state.tx = {};
+        save();
+        console.log('✅ All transactions cleared');
+    }
+    
+    function debugState() {
+        console.log('🔍 Debugging current state...');
+        console.log('📊 State object:', state);
+        console.log('📊 Categories:', state.categories);
+        console.log('📊 Transactions array:', state.transactions);
+        console.log('📊 Monthly structure:', state.tx);
+        console.log('📊 LocalStorage:', localStorage.getItem(KEY));
+    }
+
+    // Setup debug buttons
+    const debugStateBtn = byId('debugState');
+    if (debugStateBtn) {
+        debugStateBtn.addEventListener('click', function() {
+            console.log('🔍 Debug button clicked');
+            debugState();
+        });
+    }
+    
+    const clearTransactionsBtn = byId('clearTransactions');
+    if (clearTransactionsBtn) {
+        clearTransactionsBtn.addEventListener('click', function() {
+            console.log('🗑️ Clear transactions button clicked');
+            if (confirm('Are you sure you want to clear all transactions? This cannot be undone.')) {
+                clearTransactions();
+                renderAll();
+                showNotification('All transactions cleared', 'success');
+            }
+        });
+    }
+    
+    const resetStateBtn = byId('resetState');
+    if (resetStateBtn) {
+        resetStateBtn.addEventListener('click', function() {
+            console.log('🔄 Reset state button clicked');
+            if (confirm('Are you sure you want to reset the entire state? This will delete all data and cannot be undone.')) {
+                resetState();
+                renderAll();
+                showNotification('State reset to default', 'success');
+            }
+        });
+    }
+    
+    const testTransactionBtn = byId('testTransaction');
+    if (testTransactionBtn) {
+        testTransactionBtn.addEventListener('click', function() {
+            console.log('🧪 Test transaction button clicked');
+            testTransaction();
+        });
+    }
+
+    // Test function to verify transaction functionality
+    function testTransaction() {
+        console.log('🧪 Testing transaction functionality...');
+        
+        const testTx = {
+            id: crypto.randomUUID(),
+            type: 'income',
+            category: 'Test Income',
+            amount: 10000,
+            date: today(),
+            note: 'Test transaction',
+            recurring: 'none',
+            next: null
+        };
+        
+        console.log('📋 Test transaction:', testTx);
+        
+        const result = addTx(testTx);
+        
+        if (result) {
+            console.log('✅ Test transaction added successfully');
+            showNotification('Test transaction added successfully!', 'success');
+        } else {
+            console.error('❌ Test transaction failed');
+            showNotification('Test transaction failed!', 'error');
+        }
+        
+        return result;
+    }
+    
+    // Make test function globally accessible
+    window.testTransaction = testTransaction;
 })();
 
 
