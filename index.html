@@ -6,12 +6,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Yen Budget Manager</title>
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
-    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Chart.js CDN -->
     <script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js" defer></script>
     <link rel="stylesheet" href="style.css" />
@@ -40,7 +38,6 @@
                     ⬆️ Import
                     <input type="file" id="importFile" accept=".json,.csv" hidden />
                 </label>
-
             </div>
         </div>
     </header>
@@ -48,114 +45,222 @@
     <main id="app">
         <!-- DASHBOARD -->
         <section id="dashboard" class="grid">
-                    <!-- Summary Statistics Row -->
-        <div class="card summary-stats" style="grid-column: span 12;">
-            <div class="section-header">
-                <span class="icon">📊</span>
-                <h3>Financial Overview</h3>
+            <!-- Professional Header Section -->
+            <div class="dashboard-header" style="grid-column: span 12;">
+                <div class="welcome-section">
+                    <h1 class="dashboard-title">Financial Dashboard</h1>
+                    <p class="dashboard-subtitle">Welcome back! Here's your financial overview for <span id="currentMonthDisplay">August 2025</span></p>
+                </div>
+                <div class="dashboard-actions">
+                    <button class="btn primary" onclick="openTab('transactions')">
+                        <span class="btn-icon">➕</span>
+                        New Transaction
+                    </button>
+                    <button class="btn" onclick="openTab('reports')">
+                        <span class="btn-icon">📊</span>
+                        View Reports
+                    </button>
+                    <div class="dashboard-export-dropdown">
+                        <button class="btn export-btn" onclick="toggleExportDropdown()">
+                            <span class="btn-icon">📤</span>
+                            Export
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="export-dropdown-menu" id="exportDropdown">
+                            <button class="export-option" onclick="exportDashboardPDF()">
+                                <span class="export-icon">📄</span>
+                                Export as PDF
+                            </button>
+                            <button class="export-option" onclick="exportDashboardCSV()">
+                                <span class="export-icon">📊</span>
+                                Export as CSV
+                            </button>
+                            <button class="export-option" onclick="exportDashboardExcel()">
+                                <span class="export-icon">📈</span>
+                                Export as Excel
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn share-btn" onclick="shareDashboard()">
+                        <span class="btn-icon">🔗</span>
+                        Share
+                    </button>
+                </div>
             </div>
-            <div class="kpis" id="kpis">
-                <!-- KPI cards will be populated by JavaScript -->
+
+            <!-- Enhanced KPI Cards Row -->
+            <div class="card kpi-overview" style="grid-column: span 12;">
+                <div class="kpi-grid" id="kpis">
+                    <!-- KPI cards will be populated by JavaScript -->
+                </div>
             </div>
-        </div>
+
+            <!-- Financial Overview Chart -->
+            <div class="card financial-chart" style="grid-column: span 8;">
+                <div class="section-header">
+                    <span class="icon">📈</span>
+                    <h3>Financial Performance</h3>
+                    <div class="chart-controls">
+                        <select class="chart-period-selector" id="chartPeriod">
+                            <option value="7">Last 7 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                            <option value="90">Last 3 Months</option>
+                            <option value="365">Last Year</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="financialChart" height="300"></canvas>
+                </div>
+            </div>
 
             <!-- Quick Actions Section -->
             <div class="card quick-actions" style="grid-column: span 4;">
                 <div class="section-header">
-                    <span class="icon">🚀</span>
+                    <span class="icon">⚡</span>
                     <h3>Quick Actions</h3>
                 </div>
-                <div class="action-buttons">
-                    <button class="action-btn income-btn" id="addIncomeBtn">
-                        <span class="btn-icon">💰</span>
-                        Add Income
+                <div class="action-grid">
+                    <button class="action-card income" onclick="openTab('transactions')">
+                        <div class="action-icon">💰</div>
+                        <div class="action-content">
+                            <h4>Add Income</h4>
+                            <p>Record new income</p>
+                        </div>
                     </button>
-                    <button class="action-btn expense-btn" id="addExpenseBtn">
-                        <span class="btn-icon">💸</span>
-                        Add Expense
+                    <button class="action-card expense" onclick="openTab('transactions')">
+                        <div class="action-icon">💸</div>
+                        <div class="action-content">
+                            <h4>Add Expense</h4>
+                            <p>Log new expense</p>
+                        </div>
                     </button>
-                    <button class="action-btn budget-btn" id="setBudgetBtn">
-                        <span class="btn-icon">📊</span>
-                        Set Budget
+                    <button class="action-card budget" onclick="openTab('budgets')">
+                        <div class="action-icon">📊</div>
+                        <div class="action-content">
+                            <h4>Set Budget</h4>
+                            <p>Create budget plan</p>
+                        </div>
                     </button>
-                    <button class="action-btn reports-btn" id="viewReportsBtn">
-                        <span class="btn-icon">📈</span>
-                        View Reports
+                    <button class="action-card goal" onclick="openTab('budgets')">
+                        <div class="action-icon">🎯</div>
+                        <div class="action-content">
+                            <h4>Set Goal</h4>
+                            <p>Define savings goal</p>
+                        </div>
                     </button>
                 </div>
             </div>
 
-        <!-- Recent Transactions Section -->
-            <div class="card recent-transactions" style="grid-column: span 5;">
+            <!-- Enhanced Recent Transactions -->
+            <div class="card recent-transactions" style="grid-column: span 6;">
                 <div class="section-header">
-                    <span class="icon">📄</span>
+                    <span class="icon">📋</span>
                     <h3>Recent Transactions</h3>
-                    <button class="view-all-btn" id="viewAllBtn">View All</button>
+                    <button class="view-all-btn" id="viewAllBtn" onclick="openTab('transactions');">View All</button>
                 </div>
-                <div class="table-scroll">
-                    <table class="list" id="recentTable">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Category</th>
-                                <th>Note</th>
-                                <th class="right">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+                <div class="transactions-list" id="recentTransactionsList">
+                    <!-- Transactions will be populated by JavaScript -->
                 </div>
-                <div class="transaction-count" id="transactionCount"></div>
+                <div class="transaction-summary">
+                    <div class="summary-item">
+                        <span class="label">Total This Month</span>
+                        <span class="value" id="monthlyTotal">¥0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Transactions</span>
+                        <span class="value" id="transactionCount">0</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Savings Overview Section -->
+            <!-- Enhanced Savings Overview -->
             <div class="card savings-overview" style="grid-column: span 3;">
                 <div class="section-header">
                     <span class="icon">💎</span>
                     <h3>Savings Overview</h3>
                 </div>
-                <div class="savings-stats">
-                    <div class="savings-item">
-                        <span class="label">TOTAL SAVED</span>
-                        <span class="value" id="totalSaved">¥0</span>
+                <div class="savings-metrics">
+                    <div class="metric-card primary">
+                        <div class="metric-icon">💰</div>
+                        <div class="metric-content">
+                            <span class="metric-label">Total Saved</span>
+                            <span class="metric-value" id="totalSaved">¥0</span>
+                        </div>
                     </div>
-                    <div class="savings-item">
-                        <span class="label">SAVINGS RATE</span>
-                        <span class="value" id="savingsRate">100%</span>
+                    <div class="metric-card success">
+                        <div class="metric-icon">📈</div>
+                        <div class="metric-content">
+                            <span class="metric-label">Savings Rate</span>
+                            <span class="metric-value" id="savingsRate">100%</span>
+                        </div>
                     </div>
                 </div>
-                <div class="savings-category">
-                    <h4>By Category</h4>
-                    <div class="monthly-goal">
-                        <span class="icon">🎯</span>
-                        <span class="goal-text">Monthly Goal</span>
-                        <span class="goal-amount" id="monthlyGoal">¥0 / ¥0</span>
+                <div class="savings-goal">
+                    <h4>Monthly Goal Progress</h4>
+                    <div class="goal-progress">
+                        <div class="goal-bar">
+                            <div class="goal-fill" id="goalProgress"></div>
+                        </div>
+                        <div class="goal-text">
+                            <span id="monthlyGoal">¥0 / ¥0</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- This Month Progress Section -->
-            <div class="card month-progress" style="grid-column: span 4;">
+            <!-- Enhanced Month Progress -->
+            <div class="card month-progress" style="grid-column: span 3;">
                 <div class="section-header">
                     <span class="icon">📅</span>
-                    <h3>This Month</h3>
+                    <h3>Month Progress</h3>
                 </div>
-                <div class="progress-stats">
-                    <div class="progress-item">
-                        <span class="label">Days completed</span>
-                        <span class="value" id="daysCompleted">0</span>
+                <div class="progress-metrics">
+                    <div class="progress-metric">
+                        <div class="progress-circle" id="monthProgressCircle">
+                            <svg viewBox="0 0 36 36">
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <div class="progress-text">
+                                <span class="progress-number" id="monthProgressPercent">0%</span>
+                            </div>
+                        </div>
+                        <span class="progress-label">Month Complete</span>
                     </div>
-                    <div class="progress-item">
-                        <span class="label">Days remaining</span>
-                        <span class="value" id="daysRemaining">0</span>
-                    </div>
-                    <div class="progress-item">
-                        <span class="label">Progress</span>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="monthProgress"></div>
+                    <div class="time-metrics">
+                        <div class="time-metric">
+                            <span class="time-label">Days Completed</span>
+                            <span class="time-value" id="daysCompleted">0</span>
+                        </div>
+                        <div class="time-metric">
+                            <span class="time-label">Days Remaining</span>
+                            <span class="time-value" id="daysRemaining">0</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Budget Status Overview -->
+            <div class="card budget-overview" style="grid-column: span 6;">
+                <div class="section-header">
+                    <span class="icon">🏦</span>
+                    <h3>Budget Status</h3>
+                    <button class="view-all-btn" onclick="openTab('budgets');">Manage Budgets</button>
+                </div>
+                <div class="budget-grid" id="budgetOverview">
+                    <!-- Budget items will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Financial Insights -->
+            <div class="card financial-insights" style="grid-column: span 6;">
+                <div class="section-header">
+                    <span class="icon">💡</span>
+                    <h3>Financial Insights</h3>
+                </div>
+                <div class="insights-container" id="insightsContainer">
+                    <!-- Insights will be populated by JavaScript -->
                 </div>
             </div>
 
@@ -218,6 +323,51 @@
                 </div>
             </div>
         </section>
+
+        <!-- Share Modal -->
+        <div class="share-modal" id="shareModal">
+            <div class="share-modal-content">
+                <div class="share-modal-header">
+                    <h3 class="share-modal-title">Share Dashboard</h3>
+                    <button class="share-modal-close" onclick="closeShareModal()">×</button>
+                </div>
+                
+                <div class="share-options">
+                    <button class="share-option" onclick="shareViaEmail()">
+                        <div class="share-option-icon">📧</div>
+                        <div class="share-option-text">Email</div>
+                    </button>
+                    <button class="share-option" onclick="shareViaWhatsApp()">
+                        <div class="share-option-icon">💬</div>
+                        <div class="share-option-text">WhatsApp</div>
+                    </button>
+                    <button class="share-option" onclick="shareViaTwitter()">
+                        <div class="share-option-icon">🐦</div>
+                        <div class="share-option-text">Twitter</div>
+                    </button>
+                    <button class="share-option" onclick="shareViaLinkedIn()">
+                        <div class="share-option-icon">💼</div>
+                        <div class="share-option-text">LinkedIn</div>
+                    </button>
+                </div>
+                
+                <div class="share-link-section">
+                    <label class="share-link-label">Or copy this link:</label>
+                    <div class="share-link-input">
+                        <input type="text" id="shareLink" readonly value="https://your-app.com/dashboard" />
+                        <button class="copy-link-btn" onclick="copyShareLink()">Copy Link</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Success Notification -->
+        <div class="export-success" id="exportSuccess">
+            <div class="export-success-content">
+                <span class="export-success-icon">✅</span>
+                <span class="export-success-text" id="exportSuccessText">Export successful!</span>
+            </div>
+        </div>
 
         <!-- TRANSACTIONS -->
         <section id="transactions" class="grid hidden" aria-hidden="true">
@@ -327,11 +477,6 @@
                         <label>Monthly Budget (¥)</label>
                         <input name="amount" type="number" step="1" min="0" required />
                     </div>
-                    <div>
-                        <label>Actual Spent This Month (¥)</label>
-                        <input name="actualSpent" type="number" step="1" min="0" placeholder="Enter amount spent" />
-                        <small style="color: var(--text-muted);">Leave empty if no spending recorded yet</small>
-                    </div>
                     <div class="row">
                         <button class="btn primary" type="submit">Save Budget</button>
                         <button class="btn danger" type="button" id="deleteBudget">Delete</button>
@@ -408,193 +553,318 @@
 
         <!-- REPORTS -->
         <section id="reports" class="grid hidden">
-            <!-- Report Header -->
+            <!-- Professional Report Header -->
             <div class="card report-header" style="grid-column: span 12;">
-                <div class="report-title">
-                    <h2>Yen Budget Manager 2026 August</h2>
+                <div class="report-header-content">
+                    <div class="report-title-section">
+                        <h1 class="report-main-title">Financial Reports & Analytics</h1>
+                        <p class="report-subtitle">Comprehensive financial insights for <span id="reportPeriodDisplay">August 2025</span></p>
+                        <div class="report-period-selector">
+                            <select id="reportPeriod" class="period-selector">
+                                <option value="current">Current Month</option>
+                                <option value="last3">Last 3 Months</option>
+                                <option value="last6">Last 6 Months</option>
+                                <option value="last12">Last 12 Months</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                            <button class="btn primary" id="generateReport">
+                                <span class="btn-icon">📊</span>
+                                Generate Report
+                            </button>
+                        </div>
+                    </div>
                     <div class="report-actions">
                         <button type="button" id="exportToPDF" class="btn export-btn">
-                            <span>📄</span> Export PDF
+                            <span class="btn-icon">📄</span>
+                            Export PDF
                         </button>
                         <button type="button" id="exportToExcel" class="btn export-btn">
-                            <span>📊</span> Export Excel
+                            <span class="btn-icon">📊</span>
+                            Export Excel
                         </button>
                         <button type="button" id="exportToCSV" class="btn export-btn">
-                            <span>📋</span> Export CSV
+                            <span class="btn-icon">📋</span>
+                            Export CSV
                         </button>
                         <button type="button" id="shareReport" class="btn share-btn">
-                            <span>🔗</span> Share Report
+                            <span class="btn-icon">🔗</span>
+                            Share
                         </button>
                         <button type="button" id="printReport" class="btn print-btn">
-                            <span>🖨️</span> Print
+                            <span class="btn-icon">🖨️</span>
+                            Print
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Charts Row 1 -->
-            <div class="card chart-card" style="grid-column: span 6;">
+            <!-- Executive Summary Cards -->
+            <div class="card summary-overview" style="grid-column: span 12;">
+                <div class="section-header">
+                    <span class="icon">📈</span>
+                    <h3>Executive Summary</h3>
+                </div>
+                <div class="summary-grid" id="summaryGrid">
+                    <div class="summary-card income">
+                        <div class="summary-icon">💰</div>
+                        <div class="summary-content">
+                            <h4>Total Income</h4>
+                            <div class="summary-value" id="summaryIncome">¥0</div>
+                            <div class="summary-change positive" id="summaryIncomeChange">+0.0%</div>
+                        </div>
+                    </div>
+                    <div class="summary-card expense">
+                        <div class="summary-icon">💸</div>
+                        <div class="summary-content">
+                            <h4>Total Expenses</h4>
+                            <div class="summary-value" id="summaryExpense">¥0</div>
+                            <div class="summary-change negative" id="summaryExpenseChange">+0.0%</div>
+                        </div>
+                    </div>
+                    <div class="summary-card savings">
+                        <div class="summary-icon">🏦</div>
+                        <div class="summary-content">
+                            <h4>Net Savings</h4>
+                            <div class="summary-value" id="summarySavings">¥0</div>
+                            <div class="summary-change" id="summarySavingsChange">+0.0%</div>
+                        </div>
+                    </div>
+                    <div class="summary-card savings-rate">
+                        <div class="summary-icon">📊</div>
+                        <div class="summary-content">
+                            <h4>Savings Rate</h4>
+                            <div class="summary-value" id="summarySavingsRate">0.0%</div>
+                            <div class="summary-change" id="summarySavingsRateChange">+0.0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Charts Row 1 -->
+            <div class="card chart-card enhanced" style="grid-column: span 8;">
                 <div class="chart-header">
-                    <h3>Category Breakdown</h3>
+                    <h3>Financial Performance Overview</h3>
+                    <div class="chart-controls">
+                        <select id="chartType" class="chart-type-selector">
+                            <option value="line">Line Chart</option>
+                            <option value="bar">Bar Chart</option>
+                            <option value="area">Area Chart</option>
+                        </select>
+                        <div class="chart-legend">
+                            <span class="legend-item income">● Income</span>
+                            <span class="legend-item expense">● Expense</span>
+                            <span class="legend-item savings">● Savings</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="chart-container">
-                    <canvas id="categoryBreakdownChart" height="300"></canvas>
+                    <canvas id="financialOverviewChart" height="300"></canvas>
                 </div>
             </div>
 
-            <div class="card chart-card" style="grid-column: span 6;">
+            <div class="card chart-card enhanced" style="grid-column: span 4;">
                 <div class="chart-header">
-                    <h3>Monthly Savings</h3>
+                    <h3>Category Distribution</h3>
+                    <div class="chart-controls">
+                        <select id="pieChartType" class="chart-type-selector">
+                            <option value="expense">Expenses</option>
+                            <option value="income">Income</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="chart-container">
-                    <canvas id="monthlySavingsChart" height="300"></canvas>
+                    <canvas id="categoryDistributionChart" height="300"></canvas>
                 </div>
             </div>
 
-            <!-- Charts Row 2 -->
-            <div class="card chart-card" style="grid-column: span 6;">
+            <!-- Enhanced Charts Row 2 -->
+            <div class="card chart-card enhanced" style="grid-column: span 6;">
                 <div class="chart-header">
-                    <h3>Income vs Expense Trend</h3>
+                    <h3>Monthly Trends Analysis</h3>
+                    <div class="chart-controls">
+                        <select id="trendPeriod" class="chart-type-selector">
+                            <option value="6">6 Months</option>
+                            <option value="12">12 Months</option>
+                            <option value="24">24 Months</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="chart-container">
-                    <canvas id="incomeExpenseChart" height="300"></canvas>
+                    <canvas id="monthlyTrendsChart" height="300"></canvas>
                 </div>
             </div>
 
-            <div class="card chart-card" style="grid-column: span 6;">
+            <div class="card chart-card enhanced" style="grid-column: span 6;">
                 <div class="chart-header">
-                    <h3>Category Spending Trends (12 Months)</h3>
+                    <h3>Budget vs Actual Performance</h3>
+                    <div class="chart-controls">
+                        <select id="budgetChartType" class="chart-type-selector">
+                            <option value="comparison">Comparison</option>
+                            <option value="variance">Variance</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="chart-container">
-                    <canvas id="categoryTrendsChart" height="300"></canvas>
+                    <canvas id="budgetPerformanceChart" height="300"></canvas>
                 </div>
             </div>
 
-            <!-- Analysis Cards Row 1 -->
-            <div class="card analysis-card" style="grid-column: span 6;">
-                <div class="card-header">
-                    <h3>Financial Analysis & Projections</h3>
-                    <p class="subtitle">Current Month Projections</p>
-                </div>
-                <div class="analysis-content">
-                    <div class="analysis-item">
-                        <span class="label">Projected month-end expense:</span>
-                        <span class="value negative" id="projectedExpense">¥14,825</span>
-                    </div>
-                    <div class="analysis-item">
-                        <span class="label">Daily burn rate:</span>
-                        <span class="value" id="dailyBurnRate">¥478/day</span>
-                    </div>
-                    <div class="analysis-item">
-                        <span class="label">Expected outcome:</span>
-                        <span class="value negative" id="expectedOutcome">Deficit</span>
-                    </div>
-                    <div class="analysis-item">
-                        <span class="label">Target saving:</span>
-                        <span class="value" id="targetSaving">¥0</span>
-                    </div>
-                    <div class="analysis-item">
-                        <span class="label">Current pace:</span>
-                        <span class="value negative" id="currentPace">-¥11,000</span>
-                    </div>
-                    <div class="analysis-item">
-                        <span class="label">Days remaining:</span>
-                        <span class="value" id="daysRemaining">8</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card analysis-card" style="grid-column: span 6;">
+            <!-- Enhanced Analysis Cards Row 1 -->
+            <div class="card analysis-card enhanced" style="grid-column: span 6;">
                 <div class="card-header">
                     <h3>Financial Health Metrics</h3>
+                    <p class="subtitle">Key performance indicators and trends</p>
                 </div>
                 <div class="analysis-content">
-                    <div class="analysis-item">
-                        <span class="label">Average Monthly Income:</span>
-                        <span class="value" id="avgMonthlyIncome">¥0</span>
+                    <div class="metric-item">
+                        <div class="metric-header">
+                            <span class="metric-label">Monthly Burn Rate</span>
+                            <span class="metric-trend positive">↗️</span>
+                        </div>
+                        <div class="metric-value" id="monthlyBurnRate">¥0/day</div>
+                        <div class="metric-description">Average daily spending</div>
                     </div>
-                    <div class="analysis-item">
-                        <span class="label">Average Monthly Expense:</span>
-                        <span class="value negative" id="avgMonthlyExpense">¥917</span>
+                    <div class="metric-item">
+                        <div class="metric-header">
+                            <span class="metric-label">Emergency Fund Status</span>
+                            <span class="metric-trend positive">✅</span>
+                        </div>
+                        <div class="metric-value" id="emergencyFundStatus">Good</div>
+                        <div class="metric-description">3+ months of expenses covered</div>
                     </div>
-                    <div class="analysis-item">
-                        <span class="label">Average Monthly Savings:</span>
-                        <span class="value negative" id="avgMonthlySavings">-¥917</span>
+                    <div class="metric-item">
+                        <div class="metric-header">
+                            <span class="metric-label">Debt-to-Income Ratio</span>
+                            <span class="metric-trend negative">⚠️</span>
+                        </div>
+                        <div class="metric-value" id="debtToIncomeRatio">0.0%</div>
+                        <div class="metric-description">Target: Below 30%</div>
                     </div>
-                    <div class="analysis-item">
-                        <span class="label">Savings Rate:</span>
-                        <span class="value" id="savingsRate">0.0%</span>
+                    <div class="metric-item">
+                        <div class="metric-header">
+                            <span class="metric-label">Investment Rate</span>
+                            <span class="metric-trend positive">📈</span>
+                        </div>
+                        <div class="metric-value" id="investmentRate">0.0%</div>
+                        <div class="metric-description">% of income invested</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Analysis Cards Row 2 -->
-            <div class="card analysis-card" style="grid-column: span 6;">
+            <div class="card analysis-card enhanced" style="grid-column: span 6;">
                 <div class="card-header">
                     <h3>Budget Performance Analysis</h3>
+                    <p class="subtitle">Category-wise budget utilization</p>
                 </div>
-                <div class="budget-performance">
-                    <div class="budget-row">
-                        <div class="budget-category">Transport</div>
-                        <div class="budget-amount">¥10,000</div>
-                        <div class="budget-actual">¥7,000</div>
-                        <div class="budget-remaining positive">¥3,000</div>
-                        <div class="budget-percentage positive">70.0%</div>
-                    </div>
-                    <div class="budget-row">
-                        <div class="budget-category">Food</div>
-                        <div class="budget-amount">¥10,000</div>
-                        <div class="budget-actual">¥4,000</div>
-                        <div class="budget-remaining positive">¥6,000</div>
-                        <div class="budget-percentage positive">40.0%</div>
-                    </div>
+                <div class="budget-performance-enhanced" id="budgetPerformanceEnhanced">
+                    <!-- Budget performance will be populated by JavaScript -->
                 </div>
             </div>
 
-            <div class="card analysis-card" style="grid-column: span 6;">
+            <!-- Enhanced Analysis Cards Row 2 -->
+            <div class="card analysis-card enhanced" style="grid-column: span 6;">
                 <div class="card-header">
                     <h3>Year-over-Year Comparison</h3>
+                    <p class="subtitle">Annual growth and performance metrics</p>
                 </div>
-                <div class="analysis-content">
-                    <div class="analysis-item">
-                        <span class="label">2025 Total Income:</span>
-                        <span class="value" id="yoy2025Income">¥0</span>
+                <div class="yoy-analysis" id="yoyAnalysis">
+                    <div class="yoy-item">
+                        <div class="yoy-header">
+                            <span class="yoy-label">Income Growth</span>
+                            <span class="yoy-period">2024 → 2025</span>
+                        </div>
+                        <div class="yoy-value positive" id="yoyIncomeGrowth">+0.0%</div>
+                        <div class="yoy-chart">
+                            <div class="yoy-bar">
+                                <div class="yoy-fill income" id="yoyIncomeBar"></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="analysis-item">
-                        <span class="label">2024 Total Income:</span>
-                        <span class="value" id="yoy2024Income">¥0</span>
+                    <div class="yoy-item">
+                        <div class="yoy-header">
+                            <span class="yoy-label">Expense Growth</span>
+                            <span class="yoy-period">2024 → 2025</span>
+                        </div>
+                        <div class="yoy-value negative" id="yoyExpenseGrowth">+0.0%</div>
+                        <div class="yoy-chart">
+                            <div class="yoy-bar">
+                                <div class="yoy-fill expense" id="yoyExpenseBar"></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="analysis-item">
-                        <span class="label">YoY Growth:</span>
-                        <span class="value positive" id="yoyGrowth">+0.0%</span>
+                    <div class="yoy-item">
+                        <div class="yoy-header">
+                            <span class="yoy-label">Savings Growth</span>
+                            <span class="yoy-period">2024 → 2025</span>
+                        </div>
+                        <div class="yoy-value" id="yoySavingsGrowth">+0.0%</div>
+                        <div class="yoy-chart">
+                            <div class="yoy-bar">
+                                <div class="yoy-fill savings" id="yoySavingsBar"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-            <!-- Export Options -->
-            <div class="card export-card" style="grid-column: span 12;">
+            <div class="card analysis-card enhanced" style="grid-column: span 6;">
                 <div class="card-header">
-                    <h3>Export & Share</h3>
+                    <h3>Financial Insights & Recommendations</h3>
+                    <p class="subtitle">AI-powered financial advice</p>
                 </div>
-                <div class="export-options">
-                    <div class="export-option">
-                        <h4>📊 PDF Report</h4>
-                        <p>Professional PDF with all charts and analysis</p>
-                        <button type="button" id="exportPdf" class="btn primary">Export PDF</button>
+                <div class="insights-container" id="financialInsights">
+                    <div class="insight-item positive">
+                        <div class="insight-icon">💡</div>
+                        <div class="insight-content">
+                            <h4>Strong Savings Rate</h4>
+                            <p>Your savings rate is above average. Consider increasing investments for long-term growth.</p>
+                        </div>
                     </div>
-                    <div class="export-option">
-                        <h4>📈 Excel Report</h4>
-                        <p>Detailed Excel spreadsheet with raw data</p>
+                    <div class="insight-item warning">
+                        <div class="insight-icon">⚠️</div>
+                        <div class="insight-content">
+                            <h4>High Food Expenses</h4>
+                            <p>Food spending is 25% above budget. Look for ways to reduce dining out costs.</p>
+                        </div>
+                    </div>
+                    <div class="insight-item info">
+                        <div class="insight-icon">ℹ️</div>
+                        <div class="insight-content">
+                            <h4>Budget Optimization</h4>
+                            <p>Transport budget has room for optimization. Consider carpooling or public transport.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export & Share Section -->
+            <div class="card export-share-card" style="grid-column: span 12;">
+                <div class="card-header">
+                    <h3>Export & Share Options</h3>
+                    <p class="subtitle">Generate and distribute professional reports</p>
+                </div>
+                <div class="export-options-grid">
+                    <div class="export-option-card">
+                        <div class="export-icon">📄</div>
+                        <h4>PDF Report</h4>
+                        <p>Professional PDF with charts, analysis, and insights</p>
+                        <button type="button" id="exportPdfReport" class="btn primary">Export PDF</button>
+                    </div>
+                    <div class="export-option-card">
+                        <div class="export-icon">📊</div>
+                        <h4>Excel Report</h4>
+                        <p>Detailed spreadsheet with raw data and calculations</p>
                         <button type="button" id="exportExcelReport" class="btn primary">Export Excel</button>
                     </div>
-                    <div class="export-option">
-                        <h4>📱 Share Report</h4>
+                    <div class="export-option-card">
+                        <div class="export-icon">📱</div>
+                        <h4>Share Report</h4>
                         <p>Share insights with family or financial advisor</p>
-                        <button type="button" id="shareReport" class="btn primary">Share Report</button>
+                        <button type="button" id="shareReportEnhanced" class="btn primary">Share Report</button>
                     </div>
-                    <div class="export-option">
-                        <h4>🔄 Schedule Reports</h4>
+                    <div class="export-option-card">
+                        <div class="export-icon">🔄</div>
+                        <h4>Schedule Reports</h4>
                         <p>Get monthly reports automatically</p>
                         <button type="button" id="scheduleReports" class="btn primary">Set Schedule</button>
                     </div>
@@ -660,7 +930,7 @@
                         </div>
                         <div class="setting-group">
                             <div class="setting-item">
-                                <label>Theme Mode</label>
+                                <label for="themeSelector">Theme Mode</label>
                                 <div class="theme-toggle">
                                     <button type="button" id="lightTheme" class="theme-option" data-theme="light">
                                         <span class="theme-icon">☀️</span>
@@ -672,97 +942,11 @@
                                     </button>
                                 </div>
                             </div>
-                            
-                            <div class="setting-item">
-                                <label>Auto Theme</label>
-                                <div class="toggle-switch">
-                                    <input type="checkbox" id="autoTheme" checked>
-                                    <label for="autoTheme" class="toggle-label"></label>
-                                </div>
-                                <small style="color: var(--text-muted);">Follow system preference</small>
-                            </div>
-                            
                             <div class="setting-item">
                                 <label>Currency Display</label>
                                 <div class="currency-display">
                                     <span class="currency-icon">¥</span>
                                     <span>Japanese Yen (JPY)</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Contrast & Accessibility -->
-                    <div class="card">
-                        <div class="section-header">
-                            <span class="icon">👁️</span>
-                            <h3>Contrast & Accessibility</h3>
-                        </div>
-                        <div class="setting-group">
-                            <div class="setting-item">
-                                <label>Text Contrast</label>
-                                <div class="contrast-slider">
-                                    <input type="range" id="textContrast" min="1" max="3" step="0.1" value="1.5">
-                                    <div class="contrast-value" id="textContrastValue">1.5x</div>
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <label>Element Contrast</label>
-                                <div class="contrast-slider">
-                                    <input type="range" id="elementContrast" min="1" max="3" step="0.1" value="1.2">
-                                    <div class="contrast-value" id="elementContrastValue">1.2x</div>
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <label>High Contrast Mode</label>
-                                <div class="toggle-switch">
-                                    <input type="checkbox" id="highContrast">
-                                    <label for="highContrast" class="toggle-label"></label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Color Grading -->
-                    <div class="card">
-                        <div class="section-header">
-                            <span class="icon">🎭</span>
-                            <h3>Color Grading</h3>
-                        </div>
-                        <div class="setting-group">
-                            <div class="setting-item">
-                                <label>Color Presets</label>
-                                <div class="color-preset">
-                                    <button type="button" class="color-preset-btn" data-preset="default" style="--preset-color: #3b82f6;">
-                                        Default
-                                    </button>
-                                    <button type="button" class="color-preset-btn" data-preset="warm" style="--preset-color: #f59e0b;">
-                                        Warm
-                                    </button>
-                                    <button type="button" class="color-preset-btn" data-preset="cool" style="--preset-color: #06b6d4;">
-                                        Cool
-                                    </button>
-                                    <button type="button" class="color-preset-btn" data-preset="vibrant" style="--preset-color: #8b5cf6;">
-                                        Vibrant
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <label>Saturation</label>
-                                <div class="contrast-slider">
-                                    <input type="range" id="saturation" min="0.5" max="2" step="0.1" value="1">
-                                    <div class="contrast-value" id="saturationValue">100%</div>
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <label>Color Blindness Support</label>
-                                <div class="toggle-switch">
-                                    <input type="checkbox" id="colorBlindSupport">
-                                    <label for="colorBlindSupport" class="toggle-label"></label>
                                 </div>
                             </div>
                         </div>
@@ -882,55 +1066,11 @@
                     </div>
                 </div>
             </div>
-<<<<<<< HEAD
-
-            <h2>Data Management</h2>
-            <div class="setting-item">
-                <label>Backup & Restore</label>
-                <div class="row">
-                    <button class="btn" onclick="exportData()">📤 Export Data</button>
-                    <button class="btn" onclick="importData()">📥 Import Data</button>
-                </div>
-            </div>
-            
-            <div class="setting-item">
-                <label>Data Tools</label>
-                <div class="row">
-                    <button class="btn" onclick="viewRawData()">👁️ View Raw Data</button>
-                    <button class="btn danger" onclick="clearAllData()">🗑️ Clear All Data</button>
-                </div>
-            </div>
-            
-            <div class="setting-item">
-                <label>Database Info</label>
-                <div class="info-box">
-                    <p><strong>Storage Type:</strong> Browser localStorage</p>
-                    <p><strong>Data Key:</strong> yenBudgetManager</p>
-                    <p><strong>Capacity:</strong> ~5-10 MB</p>
-                    <p><strong>Persistence:</strong> Until browser data cleared</p>
-                </div>
-            </div>
-=======
->>>>>>> 0c470c388bcb89f1f97e2ae829b67e0ac708f136
         </section>
 
     </main>
 
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-brand">
-                <div class="footer-logo">¥</div>
-                <span>Yen Budget Manager</span>
-            </div>
-            <div class="footer-links">
-                <span>© 2025 Yen Budget Manager</span>
-                <span class="separator">•</span>
-                <span>Local & Private</span>
-                <span class="separator">•</span>
-                <span>Built with ❤️</span>
-            </div>
-        </div>
-    </footer>
+    <footer class="footer">© 2025 Yen Budget Manager — Local & Private</footer>
 
     <template id="rowTx">
         <tr>
@@ -947,7 +1087,7 @@
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script-simple.js" defer></script>
+    <script src="script.js" defer></script>
 </body>
 
 </html>

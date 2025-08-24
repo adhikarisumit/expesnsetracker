@@ -1,223 +1,193 @@
-# 💰 Yen Budget Manager
+# Yen Budget Manager - Professional Edition
 
-A modern, offline-first budget management application built with Node.js, Express, SQLite, and vanilla JavaScript. Track your expenses, manage budgets, and gain insights into your spending habits.
+A modern, professional budget management application built with vanilla JavaScript, featuring a beautiful design system and comprehensive financial tracking capabilities.
 
 ## ✨ Features
 
-- **📊 Dashboard**: Visual overview of your financial data with charts and statistics
-- **💳 Transaction Management**: Add, edit, and categorize income/expenses
-- **🏷️ Category Management**: Create and manage custom spending categories
-- **💰 Budget Tracking**: Set monthly budgets and track spending against them
-- **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
-- **🌙 Dark/Light Theme**: Toggle between themes for comfortable viewing
-- **📤 Data Export**: Export your data in JSON, CSV, and Excel formats
-- **💾 Local Database**: SQLite database for reliable data storage
-- **🔒 Offline-First**: Works without internet connection
-- **⚡ Real-time Updates**: Instant feedback and data synchronization
+### 🎨 **Professional Design System**
+- **Modern UI/UX**: Clean, professional interface with smooth animations
+- **Responsive Design**: Optimized for all devices (desktop, tablet, mobile)
+- **Dark/Light Theme**: Automatic theme switching with manual toggle
+- **Professional Typography**: Inter font family for excellent readability
+- **Enhanced Visual Hierarchy**: Cards, shadows, and micro-interactions
 
-## 🚀 Quick Start
+### 💰 **Financial Management**
+- **Income & Expense Tracking**: Comprehensive transaction management
+- **Budget Planning**: Set and monitor category-based budgets
+- **Savings Goals**: Track progress towards financial objectives
+- **Recurring Transactions**: Automate regular income/expenses
+- **Category Management**: Customizable expense categories
+
+### 📊 **Analytics & Reporting**
+- **Dashboard Overview**: Key performance indicators at a glance
+- **Interactive Charts**: Visual representation of financial data
+- **Monthly Trends**: Track spending patterns over time
+- **Budget Status**: Real-time budget monitoring
+- **Financial Insights**: AI-powered financial recommendations
+
+### 🔧 **Advanced Features**
+- **Data Export**: Multiple format support (JSON, CSV, Excel)
+- **Import Functionality**: Seamless data migration
+- **Local Storage**: Privacy-focused, no cloud dependencies
+- **Keyboard Shortcuts**: Power user productivity features
+- **Responsive Tables**: Mobile-optimized data display
+
+## 🚀 **Getting Started**
 
 ### Prerequisites
-
-- Node.js 18.0.0 or higher
-- npm or yarn package manager
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+- No additional software installation required
 
 ### Installation
+1. Clone or download the repository
+2. Open `index.html` in your web browser
+3. Start managing your finances immediately!
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/yen-budget-manager.git
-   cd yen-budget-manager
-   ```
+### Quick Start
+1. **Add Income**: Click "Add Income" to record your salary or other income
+2. **Set Budgets**: Define monthly spending limits for different categories
+3. **Track Expenses**: Log daily expenses to monitor spending
+4. **View Reports**: Analyze your financial health with detailed reports
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+## 🎨 **Design System**
 
-3. **Set up environment variables**
-   ```bash
-   cp env.example .env
-   # Edit .env with your configuration
-   ```
+### Color Palette
+- **Primary**: Professional blue (#3182ce)
+- **Secondary**: Deep blue (#2b6cb0)
+- **Success**: Green (#38a169)
+- **Warning**: Amber (#d69e2e)
+- **Danger**: Red (#e53e3e)
+- **Neutral**: Grays for text and borders
 
-4. **Start the development server**
-   ```bash
-   npm run dev
-   ```
+### Typography
+- **Font Family**: Inter (Google Fonts)
+- **Scale**: 12px to 36px with consistent spacing
+- **Weights**: 300 (Light) to 800 (Extra Bold)
 
-5. **Open your browser**
-   Navigate to `http://localhost:3000`
+### Components
+- **Cards**: Elevated surfaces with hover effects
+- **Buttons**: Interactive elements with micro-animations
+- **Forms**: Clean, accessible input fields
+- **Tables**: Responsive data display
+- **Charts**: Interactive financial visualizations
 
-## 🛠️ Development
+## 📱 **Responsive Design**
 
-### Available Scripts
+### Breakpoints
+- **Desktop**: 1200px+ (12-column grid)
+- **Tablet**: 768px - 1199px (8-column grid)
+- **Mobile**: 320px - 767px (4-column grid)
 
-- `npm start` - Start production server
-- `npm run dev` - Start development server with auto-reload
-- `npm test` - Run test suite
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
+### Mobile Optimizations
+- Touch-friendly interface elements
+- Optimized table layouts
+- Responsive navigation
+- Adaptive card layouts
 
-### Project Structure
+## 🎯 **Key Features**
 
-```
-yen-budget-manager/
-├── server.js              # Express server and API endpoints
-├── index.html             # Main application HTML
-├── style.css              # Application styles
-├── script.js              # Frontend JavaScript logic
-├── package.json           # Dependencies and scripts
-├── vercel.json            # Vercel deployment configuration
-├── env.example            # Environment variables template
-├── data/                  # SQLite database files
-└── README.md              # This file
-```
+### Dashboard
+- **KPI Cards**: Income, expenses, savings at a glance
+- **Quick Actions**: Fast access to common tasks
+- **Recent Transactions**: Latest financial activity
+- **Progress Tracking**: Monthly budget and savings progress
 
-### API Endpoints
+### Transactions
+- **Add/Edit**: Comprehensive transaction forms
+- **Categories**: Organized expense classification
+- **Recurring**: Automated regular transactions
+- **Filtering**: Advanced search and filtering
 
-#### Categories
-- `GET /api/categories` - Get all categories
-- `POST /api/categories` - Create new category
-- `DELETE /api/categories/:id` - Delete category
+### Budgets
+- **Category Budgets**: Set spending limits by category
+- **Savings Goals**: Define and track financial objectives
+- **Progress Monitoring**: Real-time budget status
+- **Overspending Alerts**: Visual warnings for budget limits
 
-#### Transactions
-- `GET /api/transactions` - Get transactions (with optional filters)
-- `POST /api/transactions` - Create new transaction
-- `PUT /api/transactions/:id` - Update transaction
-- `DELETE /api/transactions/:id` - Delete transaction
+### Reports
+- **Financial Analysis**: Comprehensive spending analysis
+- **Trend Charts**: Visual spending patterns
+- **Export Options**: Multiple format support
+- **Year-over-Year**: Historical comparison
 
-#### Budgets
-- `GET /api/budgets` - Get budgets (with optional month filter)
-- `POST /api/budgets` - Create/update budget
+### Settings
+- **Theme Control**: Light/dark mode toggle
+- **Category Management**: Add/edit expense categories
+- **Data Management**: Import/export functionality
+- **Preferences**: Customizable dashboard settings
 
-#### Settings
-- `GET /api/settings` - Get application settings
-- `POST /api/settings` - Update settings
+## ⌨️ **Keyboard Shortcuts**
 
-#### Export
-- `GET /api/export/json` - Export all data as JSON
-- `GET /api/export/csv` - Export transactions as CSV
+- **Ctrl + T**: Quick add transaction
+- **Ctrl + L**: Toggle light/dark theme
+- **Ctrl + /**: Focus category filter
+- **Ctrl + E**: Export data
+- **Ctrl + S**: Save current form
 
-## 🗄️ Database Schema
+## 🔒 **Privacy & Security**
 
-### Categories Table
-- `id` - Primary key
-- `name` - Category name (unique)
-- `created_at` - Creation timestamp
-- `updated_at` - Last update timestamp
+- **Local Storage**: All data stays on your device
+- **No Cloud**: Complete privacy and control
+- **Offline First**: Works without internet connection
+- **Data Export**: Full control over your information
 
-### Transactions Table
-- `id` - Primary key
-- `date` - Transaction date
-- `type` - Transaction type (income/expense)
-- `category` - Category name
-- `amount` - Transaction amount
-- `note` - Optional note
-- `recurring` - Recurring transaction flag
-- `next_date` - Next occurrence date
-- `created_at` - Creation timestamp
-- `updated_at` - Last update timestamp
+## 🛠️ **Technical Details**
 
-### Budgets Table
-- `id` - Primary key
-- `category` - Category name
-- `amount` - Budget amount
-- `month` - Budget month (YYYY-MM format)
-- `created_at` - Creation timestamp
-- `updated_at` - Last update timestamp
+### Built With
+- **HTML5**: Semantic markup
+- **CSS3**: Modern styling with CSS Grid and Flexbox
+- **Vanilla JavaScript**: No framework dependencies
+- **Chart.js**: Interactive data visualizations
+- **Local Storage**: Client-side data persistence
 
-### Settings Table
-- `id` - Primary key
-- `key` - Setting key (unique)
-- `value` - Setting value (JSON string)
-- `created_at` - Creation timestamp
-- `updated_at` - Last update timestamp
+### Browser Support
+- Chrome 80+
+- Firefox 75+
+- Safari 13+
+- Edge 80+
 
-## 🚀 Deployment
+### Performance
+- **Fast Loading**: Optimized for quick startup
+- **Smooth Animations**: 60fps transitions
+- **Efficient Rendering**: Optimized DOM manipulation
+- **Memory Management**: Efficient data handling
 
-### Vercel Deployment
+## 📈 **Roadmap**
 
-1. **Install Vercel CLI**
-   ```bash
-   npm i -g vercel
-   ```
+### Planned Features
+- **Multi-Currency Support**: International financial management
+- **Investment Tracking**: Portfolio and asset management
+- **Bill Reminders**: Payment due date notifications
+- **Financial Goals**: Advanced goal setting and tracking
+- **Mobile App**: Native mobile applications
 
-2. **Deploy to Vercel**
-   ```bash
-   vercel
-   ```
+### Enhancement Ideas
+- **AI Insights**: Machine learning financial recommendations
+- **Social Features**: Family budget sharing
+- **Integration**: Bank account connectivity
+- **Advanced Analytics**: Predictive financial modeling
 
-3. **Set environment variables in Vercel dashboard**
-   - Go to your project settings
-   - Add environment variables from your `.env` file
+## 🤝 **Contributing**
 
-### Manual Deployment
+We welcome contributions! Please feel free to:
+- Report bugs and issues
+- Suggest new features
+- Submit pull requests
+- Improve documentation
 
-1. **Build the application**
-   ```bash
-   npm run build
-   ```
+## 📄 **License**
 
-2. **Upload files to your hosting provider**
-   - Ensure Node.js 18+ is supported
-   - Set environment variables
-   - Configure your domain
+This project is open source and available under the [MIT License](LICENSE).
 
-## 🔧 Configuration
+## 🙏 **Acknowledgments**
 
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | 3000 |
-| `NODE_ENV` | Environment mode | development |
-| `DB_PATH` | Database file path | ./data/budget.db |
-| `JWT_SECRET` | JWT signing secret | (required) |
-| `RATE_LIMIT_WINDOW_MS` | Rate limit window | 900000 (15 min) |
-| `RATE_LIMIT_MAX_REQUESTS` | Max requests per window | 100 |
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm test -- --watch
-
-# Run specific test file
-npm test -- --testNamePattern="Category Management"
-```
-
-## 📝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [Express.js](https://expressjs.com/)
-- Database powered by [SQLite](https://www.sqlite.org/)
-- Charts rendered with [Chart.js](https://www.chartjs.org/)
-- Icons from [Emoji](https://emojipedia.org/)
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-1. Check the [Issues](https://github.com/yourusername/yen-budget-manager/issues) page
-2. Create a new issue with detailed information
-3. Include your Node.js version and operating system
+- **Inter Font**: Beautiful typography by Rasmus Andersson
+- **Chart.js**: Powerful charting library
+- **CSS Grid**: Modern layout system
+- **Open Source Community**: For inspiration and tools
 
 ---
 
-**Made with ❤️ for better financial management**
-# expesnsetracker
+**Built with ❤️ for better financial management**
+
+*Start your journey to financial freedom today with Yen Budget Manager!*
