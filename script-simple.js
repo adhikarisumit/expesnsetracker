@@ -1192,6 +1192,7 @@
         console.log('📊 Current state:', state);
     };
     
+<<<<<<< HEAD
     // Data management functions
     window.exportData = function() {
         const data = JSON.stringify(state, null, 2);
@@ -1256,6 +1257,8 @@
         `);
     };
     
+=======
+>>>>>>> 0c470c388bcb89f1f97e2ae829b67e0ac708f136
     // Initialize the application
     function init() {
         console.log('🚀 Initializing Yen Budget Manager (Simple)...');

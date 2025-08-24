@@ -2958,6 +2958,7 @@ main > section {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+<<<<<<< HEAD
 
 .setting-item .info-box {
     background: var(--bg-tertiary);
@@ -2977,3 +2978,5 @@ main > section {
     color: var(--text-primary);
     font-weight: 600;
 }
+=======
+>>>>>>> 0c470c388bcb89f1f97e2ae829b67e0ac708f136
